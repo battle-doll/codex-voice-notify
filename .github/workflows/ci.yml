@@ -64,7 +64,7 @@ jobs:
           test "$(/usr/bin/plutil -extract language raw "$CODEX_VOICE_NOTIFY_CONFIG")" = "ja"
           test "$(/usr/bin/plutil -extract events.PreToolUse raw "$CODEX_VOICE_NOTIFY_CONFIG")" = "false"
           /bin/sh "$SETTINGS_SCRIPT" show |
-            /usr/bin/plutil -lint -- /dev/stdin
+            /usr/bin/plutil -lint -- -
           /bin/sh "$SETTINGS_SCRIPT" setup \
             --voice female \
             --language ko \
