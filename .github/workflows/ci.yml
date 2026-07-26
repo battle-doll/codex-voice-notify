@@ -28,7 +28,11 @@ jobs:
         if: runner.os == 'Windows'
         shell: powershell
         run: |
-          .\scripts\voice_notify_config.ps1 show
+          $Settings = .\scripts\voice_notify_config.ps1 show | ConvertFrom-Json
+          if ($Settings.events.PreToolUse -ne $false -or
+              $Settings.events.PostToolUse -ne $false) {
+            throw "Tool lifecycle notifications must default to disabled."
+          }
           .\scripts\voice_notify_config.ps1 test -Event Stop -DryRun
           $env:PLUGIN_ROOT = (Get-Location).Path
           $env:PLUGIN_DATA = Join-Path $env:RUNNER_TEMP "codex-voice-notify"

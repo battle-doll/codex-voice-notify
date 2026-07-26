@@ -24,6 +24,11 @@ class VoiceNotifyTests(unittest.TestCase):
         self.assertTrue(settings["enabled"])
         self.assertEqual(settings["voice"], "female")
         self.assertEqual(settings["language"], "ko")
+        self.assertFalse(settings["events"]["PreToolUse"])
+        self.assertFalse(settings["events"]["PostToolUse"])
+        for event_name in play_notify.EVENT_FILES:
+            if event_name not in {"PreToolUse", "PostToolUse"}:
+                self.assertTrue(settings["events"][event_name])
 
     def test_invalid_settings_are_bounded(self) -> None:
         settings = play_notify.normalize_settings(
@@ -49,6 +54,18 @@ class VoiceNotifyTests(unittest.TestCase):
             {"events": {"PreToolUse": False}}
         )
         self.assertIsNone(play_notify.select_audio_path(ROOT, "PreToolUse", settings))
+
+    def test_tool_events_are_silent_by_default(self) -> None:
+        settings = play_notify.normalize_settings(None)
+        self.assertIsNone(play_notify.select_audio_path(ROOT, "PreToolUse", settings))
+        self.assertIsNone(play_notify.select_audio_path(ROOT, "PostToolUse", settings))
+
+    def test_tool_events_can_be_enabled_explicitly(self) -> None:
+        settings = play_notify.normalize_settings(
+            {"events": {"PreToolUse": True, "PostToolUse": True}}
+        )
+        self.assertIsNotNone(play_notify.select_audio_path(ROOT, "PreToolUse", settings))
+        self.assertIsNotNone(play_notify.select_audio_path(ROOT, "PostToolUse", settings))
 
     def test_unknown_event_is_silent(self) -> None:
         settings = play_notify.normalize_settings(None)

@@ -1,6 +1,6 @@
 {
   "name": "codex-voice-notify",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "description": "Offline multilingual voice notifications for Codex lifecycle events on macOS and Windows.",
   "author": {
@@ -21,7 +21,7 @@
   "interface": {
     "displayName": "Voice Notify for Codex",
     "shortDescription": "Offline voice notifications",
-    "longDescription": "Play local, privacy-preserving voice notifications for ten Codex lifecycle events on macOS and Windows. Choose a bright warm or deep bright voice in Korean, Japanese, or English, configure events, and mute or test playback without sending conversation data anywhere.",
+    "longDescription": "Play local, privacy-preserving voice notifications for ten Codex lifecycle events on macOS and Windows. Choose a warm husky or deep bright voice in Korean, Japanese, or English, configure events, and mute or test playback without sending conversation data anywhere.",
     "developerName": "battle-doll",
     "category": "Developer Tools",
     "capabilities": [
