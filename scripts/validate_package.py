@@ -135,8 +135,15 @@ def main() -> int:
                     % runtime_path
                 )
     macos_hook_text = (ROOT / "hooks" / "play_notify.sh").read_text("utf-8")
-    if "/usr/bin/plutil -extract hook_event_name raw -- -" not in macos_hook_text:
-        fail("macOS hook must read its JSON payload from plutil's stdin marker")
+    for required_parser_text in (
+        "fileHandleWithStandardInput",
+        "JSON.parse(text)",
+    ):
+        if required_parser_text not in macos_hook_text:
+            fail(
+                "macOS hook must parse its JSON payload in memory: %s"
+                % required_parser_text
+            )
     for required_tool in (
         "/bin/sh",
         "/usr/bin/plutil",
