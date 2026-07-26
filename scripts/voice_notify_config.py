@@ -7,14 +7,98 @@ import argparse
 import json
 import os
 import pathlib
+import re
+import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
+from typing import Optional, Tuple
 
 
 PLUGIN_ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PLUGIN_ROOT / "hooks"))
 import play_notify  # noqa: E402
+
+
+MIN_HOOKS_CODEX_VERSION = (0, 145, 0)
+CODEX_VERSION_PATTERN = re.compile(
+    r"(?i)^\s*(?:openai\s+)?codex(?:-cli)?\s+"
+    r"(?:\(\s*)?v?(\d+)\.(\d+)\.(\d+)\s*\)?\s*$"
+)
+
+
+def parse_codex_version(output: str) -> Optional[Tuple[int, int, int]]:
+    match = CODEX_VERSION_PATTERN.search(output)
+    if match is None:
+        return None
+    return tuple(int(part) for part in match.groups())
+
+
+def find_codex_command(override: Optional[str] = None) -> Optional[pathlib.Path]:
+    selected = override or os.environ.get("CODEX_VOICE_NOTIFY_CODEX")
+    if selected:
+        return pathlib.Path(selected).expanduser()
+    discovered = shutil.which("codex")
+    return pathlib.Path(discovered) if discovered else None
+
+
+def inspect_codex(override: Optional[str] = None) -> Tuple[
+    Optional[pathlib.Path], Optional[Tuple[int, int, int]], str
+]:
+    command = find_codex_command(override)
+    if command is None:
+        return None, None, ""
+    try:
+        completed = subprocess.run(
+            (str(command), "--version"),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            timeout=15,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return command, None, ""
+    output = completed.stdout.strip()
+    if completed.returncode != 0:
+        return command, None, output
+    return command, parse_codex_version(output), output
+
+
+def _apple_script_string(value: str) -> str:
+    return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def open_hook_trust_terminal(command: pathlib.Path, cwd: pathlib.Path) -> bool:
+    if sys.platform != "darwin":
+        return False
+    osascript = pathlib.Path("/usr/bin/osascript")
+    if not osascript.is_file():
+        return False
+    shell_command = (
+        "printf '\\nVoice Notify setup is ready. "
+        "In Codex, type /hooks and review the bundled hook.\\n\\n'; "
+        "exec %s --no-alt-screen -C %s"
+        % (shlex.quote(str(command)), shlex.quote(str(cwd)))
+    )
+    apple_script = (
+        'tell application "Terminal" to do script "%s"'
+        % _apple_script_string(shell_command)
+    )
+    try:
+        completed = subprocess.run(
+            (str(osascript), "-e", apple_script),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=15,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return completed.returncode == 0
 
 
 def write_settings(settings: dict) -> pathlib.Path:
@@ -69,7 +153,92 @@ def build_parser() -> argparse.ArgumentParser:
     test_parser.add_argument("--voice", choices=sorted(play_notify.VOICES))
     test_parser.add_argument("--language", choices=sorted(play_notify.LANGUAGES))
     test_parser.add_argument("--dry-run", action="store_true")
+
+    setup_parser = subparsers.add_parser(
+        "setup", help="Run guided first-time setup"
+    )
+    setup_parser.add_argument("--voice", choices=sorted(play_notify.VOICES))
+    setup_parser.add_argument("--language", choices=sorted(play_notify.LANGUAGES))
+    setup_parser.add_argument("--skip-audio-test", action="store_true")
+    setup_parser.add_argument("--open-hooks", action="store_true")
+    setup_parser.add_argument("--codex-command")
+    setup_parser.add_argument("--dry-run", action="store_true")
     return parser
+
+
+def run_setup(args: argparse.Namespace, settings: dict) -> int:
+    if args.voice:
+        settings["voice"] = args.voice
+    if args.language:
+        settings["language"] = args.language
+    settings["enabled"] = True
+
+    codex_command, codex_version, codex_output = inspect_codex(args.codex_command)
+    if codex_command is None:
+        print(
+            "Codex CLI was not found. Install or expose Codex on PATH, then rerun setup.",
+            file=sys.stderr,
+        )
+        return 3
+    if codex_version is None:
+        print(
+            "Could not determine the Codex CLI version from: %s"
+            % (codex_output or codex_command),
+            file=sys.stderr,
+        )
+        return 3
+    version_text = ".".join(str(part) for part in codex_version)
+    minimum_text = ".".join(str(part) for part in MIN_HOOKS_CODEX_VERSION)
+    print("Codex CLI: %s (%s)" % (version_text, codex_command))
+    if codex_version < MIN_HOOKS_CODEX_VERSION:
+        print(
+            "Codex CLI %s or newer is required for /hooks. Update Codex, then rerun setup."
+            % minimum_text,
+            file=sys.stderr,
+        )
+        return 3
+
+    test_settings = dict(settings)
+    test_settings["events"] = dict(settings["events"])
+    test_settings["events"]["Stop"] = True
+    audio_path = play_notify.select_audio_path(PLUGIN_ROOT, "Stop", test_settings)
+    if audio_path is None:
+        print("Stop audio file is unavailable.", file=sys.stderr)
+        return 1
+    print("Stop audio: %s" % audio_path)
+    if not args.dry_run and not args.skip_audio_test:
+        if not play_notify.player_available():
+            print("No supported system WAV player is available.", file=sys.stderr)
+            return 1
+        playback_status = play_notify.play_audio_sync(audio_path)
+        if playback_status != 0:
+            return playback_status
+
+    if args.dry_run:
+        print(
+            "Dry run: would save voice=%s language=%s."
+            % (settings["voice"], settings["language"])
+        )
+    else:
+        destination = write_settings(settings)
+        print("Saved %s" % destination)
+
+    if args.open_hooks:
+        if args.dry_run:
+            print("Dry run: would open a terminal for the /hooks trust step.")
+        elif open_hook_trust_terminal(codex_command, pathlib.Path.cwd()):
+            print("Opened Terminal. Type /hooks, review the Voice Notify hook, and trust it.")
+        else:
+            print(
+                "Could not open Terminal automatically. Run Codex, enter /hooks, "
+                "and review the Voice Notify hook.",
+                file=sys.stderr,
+            )
+            return 4
+    else:
+        print("Next: run Codex, enter /hooks, and review the Voice Notify hook.")
+    print("After trust is granted, fully restart Codex before testing lifecycle events.")
+    return 0
 
 
 def main() -> int:
@@ -123,6 +292,8 @@ def main() -> int:
             print("No supported system WAV player is available.", file=sys.stderr)
             return 1
         return play_notify.play_audio_sync(audio_path)
+    if args.command == "setup":
+        return run_setup(args, settings)
     return 2
 
 

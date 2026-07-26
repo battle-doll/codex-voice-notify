@@ -7,6 +7,7 @@ import array
 import hashlib
 import json
 import pathlib
+import re
 import sys
 import wave
 
@@ -50,6 +51,95 @@ def main() -> int:
         fail("plugin manifest must register hooks/hooks.json")
     if set(hooks.get("hooks", {})) != EXPECTED_EVENTS:
         fail("hook event set does not match the release contract")
+    expected_macos_hook = '/bin/sh "${PLUGIN_ROOT}/hooks/play_notify.sh"'
+    expected_windows_hook = (
+        'powershell.exe -NoLogo -NoProfile -NonInteractive '
+        '-ExecutionPolicy Bypass -File "${PLUGIN_ROOT}\\hooks\\play_notify.ps1"'
+    )
+    for event_name, groups in hooks["hooks"].items():
+        handlers = [
+            handler
+            for group in groups
+            for handler in group.get("hooks", ())
+        ]
+        if len(handlers) != 1:
+            fail("%s must register exactly one command hook" % event_name)
+        if handlers[0].get("command") != expected_macos_hook:
+            fail("%s must use the system-native macOS shell hook" % event_name)
+        if handlers[0].get("commandWindows") != expected_windows_hook:
+            fail("%s must preserve the Windows PowerShell hook" % event_name)
+    if not re.fullmatch(r"\d+\.\d+\.\d+", str(manifest.get("version", ""))):
+        fail("plugin version must be a three-part semantic version")
+    default_prompts = manifest.get("interface", {}).get("defaultPrompt", ())
+    if (
+        not isinstance(default_prompts, list)
+        or not 1 <= len(default_prompts) <= 3
+        or any(
+            not isinstance(prompt, str)
+            or not prompt.strip()
+            or len(prompt) > 128
+            for prompt in default_prompts
+        )
+    ):
+        fail("default prompts must contain 1-3 non-empty strings of at most 128 characters")
+    if not any(
+        marker in default_prompts[0].lower()
+        for marker in ("first-time setup", "set up voice notify")
+    ):
+        fail("the first default prompt must offer guided first-time setup")
+    skill_text = (
+        ROOT / "skills" / "voice-notify-settings" / "SKILL.md"
+    ).read_text("utf-8")
+    for required_text in (
+        "## First-time setup",
+        "natural-language",
+        "--open-hooks",
+        "-OpenHooks",
+        "voice_notify_config.sh",
+    ):
+        if required_text not in skill_text:
+            fail("settings skill is missing setup guidance: %s" % required_text)
+    safe_trust_guidance = re.compile(
+        r"Never edit the trust\s+store or use\s+"
+        r"`--dangerously-bypass-hook-trust`\."
+    )
+    if not safe_trust_guidance.search(skill_text):
+        fail("settings skill must preserve the mandatory hook trust boundary")
+    setup_launchers = (
+        ROOT / "scripts" / "voice_notify_config.py",
+        ROOT / "scripts" / "voice_notify_config.ps1",
+        ROOT / "scripts" / "voice_notify_config.sh",
+    )
+    for launcher_path in setup_launchers:
+        launcher_text = launcher_path.read_text("utf-8")
+        if "--dangerously-bypass-hook-trust" in launcher_text:
+            fail("setup launcher must not bypass hook trust: %s" % launcher_path)
+        if "/hooks" not in launcher_text:
+            fail("setup launcher must hand off visibly to /hooks: %s" % launcher_path)
+    macos_runtime_paths = (
+        ROOT / "hooks" / "play_notify.sh",
+        ROOT / "scripts" / "voice_notify_config.sh",
+    )
+    for runtime_path in macos_runtime_paths:
+        if not runtime_path.is_file() or runtime_path.stat().st_size == 0:
+            fail("missing system-native macOS runtime: %s" % runtime_path)
+        runtime_text = runtime_path.read_text("utf-8")
+        for forbidden_reference in ("/usr/bin/python3", "play_notify.py"):
+            if forbidden_reference in runtime_text:
+                fail(
+                    "macOS runtime must not require Python: %s" % runtime_path
+                )
+    for required_tool in (
+        "/bin/sh",
+        "/usr/bin/plutil",
+        "/usr/bin/afplay",
+        "/usr/bin/osascript",
+    ):
+        if not any(
+            required_tool in path.read_text("utf-8")
+            for path in macos_runtime_paths
+        ):
+            fail("macOS runtime is missing system tool reference: %s" % required_tool)
 
     audio_files = sorted((ROOT / "assets" / "audio").glob("*/*/*.wav"))
     if len(audio_files) != 60:
@@ -109,7 +199,8 @@ def main() -> int:
         fail("submission evals must contain exactly 5 positive and 3 negative cases")
 
     print(
-        "PASS: manifest, 10 hooks, 60 WAVs, checksums, format, signal, clipping, and 5+3 evals "
+        "PASS: manifest, guided setup, system-native macOS runtime, 10 hooks, "
+        "60 WAVs, checksums, format, signal, clipping, and 5+3 evals "
         "(%.2f-%.2fs)" % (min(durations), max(durations))
     )
     return 0

@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.1.3 - 2026-07-27
+
+- Added guided first-time setup on macOS and Windows: save the selected voice
+  and language, test local playback, verify Codex CLI support for `/hooks`, and
+  open a visible terminal at the hook review step.
+- Added a first-time setup prompt that explicitly authorizes a compatible Codex
+  CLI update when required while preserving mandatory human hook trust.
+- Added natural-language usage guidance for female or male voices in Korean,
+  Japanese, and English.
+- Replaced the macOS Python runtime dependency with native `/bin/sh`, `plutil`,
+  `afplay`, and `osascript` tooling, so Python and Xcode Command Line Tools are
+  no longer required.
+- Updated Windows setup commands to avoid process-local PowerShell execution
+  policy failures without changing the user's system policy.
+- Kept all bundled audio assets unchanged from 0.1.2.
+
 ## 0.1.2 - 2026-07-27
 
 - Removed an isolated trailing non-lexical vocalization from the approved
