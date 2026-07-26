@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.2 - 2026-07-27
+
+- Removed an isolated trailing non-lexical vocalization from the approved
+  female Korean `SubagentStart` notification without changing the spoken
+  sentence, voice, or delivery.
+- Rebuilt the audio manifest for the corrected asset; the other 59 bundled WAV
+  files and notification defaults are unchanged.
+
 ## 0.1.1 - 2026-07-27
 
 - Replaced the 30 bundled female notifications with the approved original

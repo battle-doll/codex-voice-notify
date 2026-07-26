@@ -72,7 +72,7 @@ actually asks for permission.
 
 ## Compatibility
 
-Version 0.1.1 supports macOS and Windows with only system-provided audio and
+Version 0.1.2 supports macOS and Windows with only system-provided audio and
 scripting components. Linux is not yet supported.
 
 ## Licensing

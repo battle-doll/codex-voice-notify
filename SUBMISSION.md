@@ -6,7 +6,7 @@ Status: version update package prepared for submission.
 - Display name: `Voice Notify for Codex`
 - Developer: `battle-doll`
 - Category: `Developer Tools`
-- Version: `0.1.1`
+- Version: `0.1.2`
 - Platforms: macOS and Windows
 - Authentication: none
 - External network access: none
@@ -16,7 +16,8 @@ Status: version update package prepared for submission.
 - Release note: Updated the female voice in all three languages, regenerated
   the English set with natural English prosody, changed the Korean subagent
   wording, disabled noisy tool-start/tool-end notifications by default, and
-  documented hook trust plus restart behavior.
+  documented hook trust plus restart behavior. Removed an isolated trailing
+  non-lexical vocalization from the female Korean SubagentStart notification.
 
 Required human steps in the OpenAI submission portal:
 
