@@ -87,7 +87,6 @@ load_settings() {
         ''|*[!0-9]*) return ;;
     esac
     [ "$config_bytes" -le 65536 ] || return
-    /usr/bin/plutil -lint -- "$config_path" >/dev/null 2>&1 || return
 
     configured_value=$(plist_raw enabled) || configured_value=""
     case "$configured_value" in true|false) enabled=$configured_value ;; esac
