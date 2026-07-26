@@ -160,8 +160,7 @@ if [ -f "$config_path" ]; then
     case "$config_bytes" in
         ''|*[!0-9]*) config_bytes=65537 ;;
     esac
-    if [ "$config_bytes" -le 65536 ] &&
-        /usr/bin/plutil -lint -- "$config_path" >/dev/null 2>&1; then
+    if [ "$config_bytes" -le 65536 ]; then
         configured=$(
             /usr/bin/plutil -extract enabled raw -- "$config_path" 2>/dev/null
         )
