@@ -24,17 +24,98 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Package and WAV validation
         run: python scripts/validate_package.py
+      - name: macOS first-time setup smoke test
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          SKILL_DIR="$PWD/skills/voice-notify-settings"
+          PLUGIN_ROOT="$(cd "$SKILL_DIR/../.." && pwd)"
+          SETTINGS_SCRIPT="$PLUGIN_ROOT/scripts/voice_notify_config.sh"
+          HOOK_SCRIPT="$PLUGIN_ROOT/hooks/play_notify.sh"
+          /bin/sh -n "$SETTINGS_SCRIPT"
+          /bin/sh -n "$HOOK_SCRIPT"
+          FAKE_CODEX="$RUNNER_TEMP/codex"
+          printf '#!/bin/sh\necho "codex-cli 0.145.0"\n' > "$FAKE_CODEX"
+          chmod +x "$FAKE_CODEX"
+
+          REJECTED_CONFIG="$RUNNER_TEMP/rejected-settings.json"
+          export CODEX_VOICE_NOTIFY_CONFIG="$REJECTED_CONFIG"
+          set +e
+          /bin/sh "$SETTINGS_SCRIPT" setup \
+            --voice male \
+            --language en \
+            --codex-command /bin/echo \
+            --skip-audio-test
+          REJECTED_STATUS=$?
+          set -e
+          if [ "$REJECTED_STATUS" -ne 3 ] || [ -e "$REJECTED_CONFIG" ]; then
+            echo "Rejected Codex executables must return 3 without saving settings." >&2
+            exit 1
+          fi
+
+          export CODEX_VOICE_NOTIFY_CONFIG="$RUNNER_TEMP/settings.json"
+          /bin/sh "$SETTINGS_SCRIPT" setup \
+            --voice male \
+            --language ja \
+            --codex-command "$FAKE_CODEX" \
+            --skip-audio-test
+          test "$(/usr/bin/plutil -extract voice raw "$CODEX_VOICE_NOTIFY_CONFIG")" = "male"
+          test "$(/usr/bin/plutil -extract language raw "$CODEX_VOICE_NOTIFY_CONFIG")" = "ja"
+          test "$(/usr/bin/plutil -extract events.PreToolUse raw "$CODEX_VOICE_NOTIFY_CONFIG")" = "false"
+          SHOWN_SETTINGS="$RUNNER_TEMP/shown-settings.json"
+          /bin/sh "$SETTINGS_SCRIPT" show > "$SHOWN_SETTINGS"
+          test "$(/usr/bin/plutil -extract voice raw "$SHOWN_SETTINGS")" = "male"
+          /bin/sh "$SETTINGS_SCRIPT" setup \
+            --voice female \
+            --language ko \
+            --codex-command "$FAKE_CODEX" \
+            --open-hooks \
+            --dry-run
+          /bin/sh "$SETTINGS_SCRIPT" test --event Stop --dry-run
+
+          export PLUGIN_ROOT
+          export PLUGIN_DATA="$RUNNER_TEMP/codex-voice-notify"
+          export CODEX_VOICE_NOTIFY_NO_PLAY=1
+          printf '%s' '{"hook_event_name":"Stop","prompt":"PRIVATE_SENTINEL"}' |
+            /bin/sh "$HOOK_SCRIPT"
       - name: Windows settings script smoke test
         if: runner.os == 'Windows'
         shell: powershell
         run: |
-          $Settings = .\scripts\voice_notify_config.ps1 show | ConvertFrom-Json
+          $SkillDir = Join-Path (Get-Location).Path "skills\voice-notify-settings"
+          $PluginRoot = [IO.Path]::GetFullPath((Join-Path $SkillDir "..\.."))
+          $FakeCodex = Join-Path $env:RUNNER_TEMP "codex.cmd"
+          Set-Content -LiteralPath $FakeCodex -Encoding ASCII -Value '@echo codex-cli 0.145.0'
+          $RejectedConfig = Join-Path $env:RUNNER_TEMP "rejected-settings.json"
+          $env:CODEX_VOICE_NOTIFY_CONFIG = $RejectedConfig
+          powershell.exe -NoProfile -ExecutionPolicy Bypass `
+            -File "$PluginRoot\scripts\voice_notify_config.ps1" `
+            setup -Voice male -Language en -CodexCommand $env:ComSpec -SkipAudioTest
+          if ($LASTEXITCODE -ne 3 -or (Test-Path -LiteralPath $RejectedConfig)) {
+            throw "Rejected Codex executables must return 3 without saving settings."
+          }
+          $env:CODEX_VOICE_NOTIFY_CONFIG = Join-Path $env:RUNNER_TEMP "settings.json"
+          $Settings = & "$PluginRoot\scripts\voice_notify_config.ps1" show | ConvertFrom-Json
           if ($Settings.events.PreToolUse -ne $false -or
               $Settings.events.PostToolUse -ne $false) {
             throw "Tool lifecycle notifications must default to disabled."
           }
-          .\scripts\voice_notify_config.ps1 test -Event Stop -DryRun
+          powershell.exe -NoProfile -ExecutionPolicy Bypass `
+            -File "$PluginRoot\scripts\voice_notify_config.ps1" `
+            setup -Voice male -Language ja -CodexCommand $FakeCodex -SkipAudioTest
+          powershell.exe -NoProfile -ExecutionPolicy Bypass `
+            -File "$PluginRoot\scripts\voice_notify_config.ps1" `
+            setup -Voice female -Language ko -CodexCommand $FakeCodex -OpenHooks -DryRun
+          & "$PluginRoot\scripts\voice_notify_config.ps1" test -Event Stop -DryRun
           $env:PLUGIN_ROOT = (Get-Location).Path
           $env:PLUGIN_DATA = Join-Path $env:RUNNER_TEMP "codex-voice-notify"
           $env:CODEX_VOICE_NOTIFY_NO_PLAY = "1"
-          '{"hook_event_name":"Stop","prompt":"PRIVATE_SENTINEL"}' | .\hooks\play_notify.ps1
+          $HookInput = '{"hook_event_name":"Stop","prompt":"PRIVATE_SENTINEL"}'
+          $HookInput |
+            powershell.exe -NoLogo -NoProfile -NonInteractive `
+              -ExecutionPolicy Bypass `
+              -File "$PluginRoot\hooks\play_notify.ps1"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Windows hook smoke test failed with exit code $LASTEXITCODE."
+          }

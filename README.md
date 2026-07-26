@@ -22,47 +22,97 @@ The plugin plays a local WAV for:
 - `SubagentStop`
 - `Stop`
 
-It uses the macOS system `afplay` player or Windows `System.Media.SoundPlayer`.
-It has no network code or telemetry and never stores prompts, messages, tool
-input, or tool output. Playback is non-blocking, and a local lock plus a short
-cooldown prevents overlapping clips.
+It uses `/bin/sh`, `plutil`, `afplay`, and `osascript` already included with
+macOS, or Windows PowerShell and `System.Media.SoundPlayer`. It does not require
+Python or Xcode Command Line Tools. It has no network code or telemetry and
+never stores prompts, messages, tool input, or tool output. Playback is
+non-blocking, and a local lock plus a short cooldown prevents overlapping clips.
 
 ## Install from GitHub
 
 Give Codex the repository URL and ask it to install the plugin, or run:
+
+macOS:
 
 ```bash
 codex plugin marketplace add battle-doll/codex-voice-notify --ref main
 codex plugin add codex-voice-notify@codex-voice-notify
 ```
 
-Restart Codex, open `/hooks`, inspect the bundled command, and explicitly trust it.
-Then fully restart Codex again before testing lifecycle events. Hook trust is
-persisted, but an already-running Codex process may not activate newly trusted
-plugin hooks until the next launch. Codex deliberately does not trust
-third-party hooks at install time, and the plugin must not bypass that review.
+Windows PowerShell:
+
+```powershell
+codex.cmd plugin marketplace add battle-doll/codex-voice-notify --ref main
+codex.cmd plugin add codex-voice-notify@codex-voice-notify
+```
+
+## First-time setup
+
+After installation, select the plugin's **Finish first-time setup** prompt or
+ask Codex naturally:
+
+> Finish first-time setup for Voice Notify using the female Korean voice.
+> Check and update the Codex CLI if required.
+
+This is a safe, repeatable starter prompt. Current Codex plugin UI does not
+conditionally hide a prompt after first use, so it remains available for
+recovery or re-running setup.
+
+The guided setup:
+
+1. Checks for a Codex CLI version that supports `/hooks` and, when explicitly
+   authorized by the setup prompt, updates an npm or Homebrew installation if
+   required.
+2. Saves the selected voice and language.
+3. Plays the local `Stop` notification as a test.
+4. Opens a Codex terminal with the `/hooks` instruction.
+
+The bundled setup script only reports compatibility; it does not modify the
+host installation by itself. Codex performs an authorized update after
+inspecting whether the CLI came from npm, the Homebrew cask, or another source.
+
+Enter `/hooks`, inspect the bundled command, and explicitly trust it. Then fully
+restart Codex before testing lifecycle events. Hook trust is persisted, but an
+already-running Codex process may not activate newly trusted plugin hooks until
+the next launch. Codex deliberately does not trust third-party hooks at install
+time, and the plugin never bypasses that review.
+
+If an update cannot replace a currently running CLI executable, exit that CLI,
+run the displayed update command in a separate terminal, and start setup again.
 
 ## Configure
 
-Ask Codex to configure Voice Notify, or run the bundled command from a clone:
+Use natural language at any time. For example:
+
+- "Use the female English voice."
+- "Change Voice Notify to male Japanese."
+- "여성 한국어 음성으로 바꿔줘."
+- "Mute Voice Notify."
+- "Test the Stop notification."
+
+Codex maps `female` or `male` and Korean/Hangul (`ko`), Japanese (`ja`), or
+English (`en`) to the bundled settings command. You can also run it manually
+from a clone:
 
 macOS:
 
 ```bash
-/usr/bin/python3 scripts/voice_notify_config.py show
-/usr/bin/python3 scripts/voice_notify_config.py set --voice female --language ko
-/usr/bin/python3 scripts/voice_notify_config.py set --voice male --language en
-/usr/bin/python3 scripts/voice_notify_config.py test --event Stop
-/usr/bin/python3 scripts/voice_notify_config.py mute
+/bin/sh scripts/voice_notify_config.sh setup --voice female --language ko --open-hooks
+/bin/sh scripts/voice_notify_config.sh show
+/bin/sh scripts/voice_notify_config.sh set --voice female --language ko
+/bin/sh scripts/voice_notify_config.sh set --voice male --language en
+/bin/sh scripts/voice_notify_config.sh test --event Stop
+/bin/sh scripts/voice_notify_config.sh mute
 ```
 
 Windows:
 
 ```powershell
-powershell.exe -NoProfile -File scripts\voice_notify_config.ps1 show
-powershell.exe -NoProfile -File scripts\voice_notify_config.ps1 set -Voice female -Language ko
-powershell.exe -NoProfile -File scripts\voice_notify_config.ps1 test -Event Stop
-powershell.exe -NoProfile -File scripts\voice_notify_config.ps1 mute
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 setup -Voice female -Language ko -OpenHooks
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 show
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 set -Voice female -Language ko
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 test -Event Stop
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 mute
 ```
 
 Defaults are `female`, `ko`, a 450 ms minimum interval, and eight events
@@ -70,10 +120,22 @@ enabled. `PreToolUse` and `PostToolUse` remain available but default to off to
 avoid noisy per-tool notifications. `PermissionRequest` only plays when Codex
 actually asks for permission.
 
+## Troubleshooting
+
+- If `/hooks` is unrecognized, update Codex CLI to `0.145.0` or newer and start
+  setup again.
+- If PowerShell blocks `codex.ps1` or `npm.ps1`, use `codex.cmd` or `npm.cmd`.
+  The bundled Windows settings commands use process-local
+  `-ExecutionPolicy Bypass` and do not change the system execution policy.
+- If the test sound works but lifecycle notifications do not, review the hook
+  in `/hooks`, trust it, and fully restart Codex.
+
 ## Compatibility
 
-Version 0.1.2 supports macOS and Windows with only system-provided audio and
-scripting components. Linux is not yet supported.
+Version 0.1.3 supports macOS and Windows with system-provided audio and
+scripting components. macOS does not require Python or Xcode Command Line
+Tools. Guided hook setup requires Codex CLI `0.145.0` or newer. Linux is not yet
+supported.
 
 ## Licensing
 

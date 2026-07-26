@@ -1,6 +1,6 @@
 {
   "name": "codex-voice-notify",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "license": "MIT",
   "description": "Offline multilingual voice notifications for Codex lifecycle events on macOS and Windows.",
   "author": {
@@ -21,12 +21,13 @@
   "interface": {
     "displayName": "Voice Notify for Codex",
     "shortDescription": "Offline voice notifications",
-    "longDescription": "Play local, privacy-preserving voice notifications for ten Codex lifecycle events on macOS and Windows. Choose a warm husky or deep bright voice in Korean, Japanese, or English, configure events, and mute or test playback without sending conversation data anywhere.",
+    "longDescription": "Play local, privacy-preserving voice notifications for ten Codex lifecycle events on macOS and Windows. Complete guided first-time setup, choose a warm husky or deep bright voice in Korean, Japanese, or English, configure events, and mute or test playback without sending conversation data anywhere.",
     "developerName": "battle-doll",
     "category": "Developer Tools",
     "capabilities": [
       "Offline audio",
       "Lifecycle hooks",
+      "Guided first-time setup",
       "Voice settings",
       "macOS and Windows"
     ],
@@ -34,9 +35,9 @@
     "privacyPolicyURL": "https://github.com/battle-doll/codex-voice-notify/blob/main/PRIVACY.md",
     "termsOfServiceURL": "https://github.com/battle-doll/codex-voice-notify/blob/main/TERMS.md",
     "defaultPrompt": [
-      "Configure Voice Notify for Codex to use the female Korean voice.",
-      "Test the Stop voice notification.",
-      "Mute Voice Notify for Codex."
+      "Set up Voice Notify with the female Korean voice. Update Codex if needed, test playback, and show me the /hooks trust step.",
+      "Change Voice Notify to the male Japanese voice.",
+      "Show me how to control Voice Notify with natural-language requests."
     ],
     "brandColor": "#7257D5",
     "composerIcon": "./assets/composer-icon.png",

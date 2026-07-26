@@ -5,6 +5,7 @@ import json
 import os
 import pathlib
 import tempfile
+import types
 import unittest
 from unittest import mock
 
@@ -16,6 +17,13 @@ SPEC = importlib.util.spec_from_file_location(
 assert SPEC and SPEC.loader
 play_notify = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(play_notify)
+
+CONFIG_SPEC = importlib.util.spec_from_file_location(
+    "voice_notify_config", ROOT / "scripts" / "voice_notify_config.py"
+)
+assert CONFIG_SPEC and CONFIG_SPEC.loader
+voice_notify_config = importlib.util.module_from_spec(CONFIG_SPEC)
+CONFIG_SPEC.loader.exec_module(voice_notify_config)
 
 
 class VoiceNotifyTests(unittest.TestCase):
@@ -95,6 +103,135 @@ class VoiceNotifyTests(unittest.TestCase):
             ):
                 with mock.patch("sys.stdin.buffer.read", return_value=json.dumps(payload).encode()):
                     self.assertEqual(play_notify.main(), 0)
+
+
+class VoiceNotifySetupTests(unittest.TestCase):
+    def setup_args(self, **overrides: object) -> types.SimpleNamespace:
+        values = {
+            "voice": "female",
+            "language": "ko",
+            "skip_audio_test": False,
+            "open_hooks": True,
+            "codex_command": None,
+            "dry_run": True,
+        }
+        values.update(overrides)
+        return types.SimpleNamespace(**values)
+
+    def test_parse_codex_version(self) -> None:
+        self.assertEqual(
+            voice_notify_config.parse_codex_version("codex-cli 0.145.0"),
+            (0, 145, 0),
+        )
+        self.assertEqual(
+            voice_notify_config.parse_codex_version("OpenAI Codex (v0.145.0)"),
+            (0, 145, 0),
+        )
+        self.assertIsNone(
+            voice_notify_config.parse_codex_version(
+                "Microsoft Windows [Version 10.0.26200.0]"
+            )
+        )
+        self.assertIsNone(
+            voice_notify_config.parse_codex_version("codex-cli 0.145.0-alpha.1")
+        )
+        self.assertIsNone(voice_notify_config.parse_codex_version("unknown"))
+
+    def test_failed_version_command_is_not_accepted(self) -> None:
+        completed = mock.Mock(returncode=1, stdout="codex-cli 0.145.0")
+        with mock.patch.object(
+            voice_notify_config,
+            "find_codex_command",
+            return_value=pathlib.Path("/usr/local/bin/codex"),
+        ):
+            with mock.patch.object(
+                voice_notify_config.subprocess, "run", return_value=completed
+            ):
+                command, version, output = voice_notify_config.inspect_codex()
+        self.assertEqual(command, pathlib.Path("/usr/local/bin/codex"))
+        self.assertIsNone(version)
+        self.assertEqual(output, "codex-cli 0.145.0")
+
+    def test_setup_requires_codex_with_hooks_support(self) -> None:
+        settings = play_notify.normalize_settings(None)
+        with mock.patch.object(
+            voice_notify_config,
+            "inspect_codex",
+            return_value=(pathlib.Path("/usr/local/bin/codex"), (0, 116, 0), "0.116.0"),
+        ):
+            with mock.patch.object(voice_notify_config, "write_settings") as write:
+                with mock.patch.object(
+                    voice_notify_config, "open_hook_trust_terminal"
+                ) as open_terminal:
+                    status = voice_notify_config.run_setup(self.setup_args(), settings)
+        self.assertEqual(status, 3)
+        write.assert_not_called()
+        open_terminal.assert_not_called()
+
+    def test_setup_dry_run_reaches_hook_step(self) -> None:
+        settings = play_notify.normalize_settings(None)
+        with mock.patch.object(
+            voice_notify_config,
+            "inspect_codex",
+            return_value=(pathlib.Path("/usr/local/bin/codex"), (0, 145, 0), "0.145.0"),
+        ):
+            status = voice_notify_config.run_setup(self.setup_args(), settings)
+        self.assertEqual(status, 0)
+
+    def test_setup_saves_selected_preferences(self) -> None:
+        settings = play_notify.normalize_settings(None)
+        with tempfile.TemporaryDirectory() as directory:
+            destination = pathlib.Path(directory) / "settings.json"
+            with mock.patch.object(
+                voice_notify_config.play_notify,
+                "user_settings_path",
+                return_value=destination,
+            ):
+                with mock.patch.object(
+                    voice_notify_config,
+                    "inspect_codex",
+                    return_value=(
+                        pathlib.Path("/usr/local/bin/codex"),
+                        (0, 145, 0),
+                        "0.145.0",
+                    ),
+                ):
+                    status = voice_notify_config.run_setup(
+                        self.setup_args(
+                            voice="male",
+                            language="ja",
+                            skip_audio_test=True,
+                            open_hooks=False,
+                            dry_run=False,
+                        ),
+                        settings,
+                    )
+            saved = json.loads(destination.read_text(encoding="utf-8"))
+        self.assertEqual(status, 0)
+        self.assertTrue(saved["enabled"])
+        self.assertEqual(saved["voice"], "male")
+        self.assertEqual(saved["language"], "ja")
+
+    def test_macos_hook_terminal_command_keeps_human_review(self) -> None:
+        completed = mock.Mock(returncode=0)
+        with mock.patch.object(voice_notify_config.sys, "platform", "darwin"):
+            with mock.patch.object(
+                voice_notify_config.pathlib.Path, "is_file", return_value=True
+            ):
+                with mock.patch.object(
+                    voice_notify_config.subprocess, "run", return_value=completed
+                ) as run:
+                    opened = voice_notify_config.open_hook_trust_terminal(
+                        pathlib.Path("/usr/local/bin/codex"),
+                        pathlib.Path("/tmp/example"),
+                    )
+        self.assertTrue(opened)
+        command = run.call_args.args[0]
+        self.assertEqual(command[0].replace("\\", "/"), "/usr/bin/osascript")
+        self.assertEqual(command[1], "-e")
+        self.assertIn("/hooks", command[2])
+        self.assertIn("--no-alt-screen", command[2])
+        self.assertNotIn("--dangerously-bypass-hook-trust", command[2])
 
 
 if __name__ == "__main__":
