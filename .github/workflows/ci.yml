@@ -65,7 +65,7 @@ jobs:
           test "$(/usr/bin/plutil -extract events.PreToolUse raw "$CODEX_VOICE_NOTIFY_CONFIG")" = "false"
           SHOWN_SETTINGS="$RUNNER_TEMP/shown-settings.json"
           /bin/sh "$SETTINGS_SCRIPT" show > "$SHOWN_SETTINGS"
-          /usr/bin/plutil -lint "$SHOWN_SETTINGS"
+          test "$(/usr/bin/plutil -extract voice raw "$SHOWN_SETTINGS")" = "male"
           /bin/sh "$SETTINGS_SCRIPT" setup \
             --voice female \
             --language ko \
