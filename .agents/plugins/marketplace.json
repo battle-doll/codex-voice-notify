@@ -1,0 +1,20 @@
+{
+  "name": "codex-voice-notify",
+  "interface": {
+    "displayName": "Voice Notify for Codex"
+  },
+  "plugins": [
+    {
+      "name": "codex-voice-notify",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

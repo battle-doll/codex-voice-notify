@@ -1,0 +1,45 @@
+{
+  "name": "codex-voice-notify",
+  "version": "0.1.0",
+  "license": "MIT",
+  "description": "Offline multilingual voice notifications for Codex lifecycle events on macOS and Windows.",
+  "author": {
+    "name": "battle-doll",
+    "url": "https://github.com/battle-doll"
+  },
+  "homepage": "https://github.com/battle-doll/codex-voice-notify#readme",
+  "repository": "https://github.com/battle-doll/codex-voice-notify",
+  "keywords": [
+    "codex",
+    "notifications",
+    "voice",
+    "offline",
+    "hooks"
+  ],
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
+  "interface": {
+    "displayName": "Voice Notify for Codex",
+    "shortDescription": "Offline voice notifications",
+    "longDescription": "Play local, privacy-preserving voice notifications for ten Codex lifecycle events on macOS and Windows. Choose a bright warm or deep bright voice in Korean, Japanese, or English, configure events, and mute or test playback without sending conversation data anywhere.",
+    "developerName": "battle-doll",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Offline audio",
+      "Lifecycle hooks",
+      "Voice settings",
+      "macOS and Windows"
+    ],
+    "websiteURL": "https://github.com/battle-doll/codex-voice-notify",
+    "privacyPolicyURL": "https://github.com/battle-doll/codex-voice-notify/blob/main/PRIVACY.md",
+    "termsOfServiceURL": "https://github.com/battle-doll/codex-voice-notify/blob/main/TERMS.md",
+    "defaultPrompt": [
+      "Configure Voice Notify for Codex to use the female Korean voice.",
+      "Test the Stop voice notification.",
+      "Mute Voice Notify for Codex."
+    ],
+    "brandColor": "#7257D5",
+    "composerIcon": "./assets/composer-icon.png",
+    "logo": "./assets/logo.png"
+  }
+}

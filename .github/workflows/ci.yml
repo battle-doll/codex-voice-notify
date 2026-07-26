@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    strategy:
+      matrix:
+        os:
+          - macos-latest
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Package and WAV validation
+        run: python scripts/validate_package.py
+      - name: Windows settings script smoke test
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          .\scripts\voice_notify_config.ps1 show
+          .\scripts\voice_notify_config.ps1 test -Event Stop -DryRun
+          $env:PLUGIN_ROOT = (Get-Location).Path
+          $env:PLUGIN_DATA = Join-Path $env:RUNNER_TEMP "codex-voice-notify"
+          $env:CODEX_VOICE_NOTIFY_NO_PLAY = "1"
+          '{"hook_event_name":"Stop","prompt":"PRIVATE_SENTINEL"}' | .\hooks\play_notify.ps1

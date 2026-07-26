@@ -1,0 +1,62 @@
+{
+  "SessionStart": {
+    "file": "session-start.wav",
+    "ko": "새 코덱스 세션을 시작합니다.",
+    "ja": "新しいCodexセッションを開始します。",
+    "en": "Starting a new Codex session."
+  },
+  "UserPromptSubmit": {
+    "file": "user-prompt-submit.wav",
+    "ko": "요청을 확인했습니다.",
+    "ja": "リクエストを確認しました。",
+    "en": "Your request has been received."
+  },
+  "PreToolUse": {
+    "file": "pre-tool-use.wav",
+    "ko": "도구를 실행합니다.",
+    "ja": "ツールを実行します。",
+    "en": "Running the tool."
+  },
+  "PostToolUse": {
+    "file": "post-tool-use.wav",
+    "ko": "도구 실행이 끝났습니다.",
+    "ja": "ツールの実行が終了しました。",
+    "en": "The tool call has ended."
+  },
+  "PermissionRequest": {
+    "file": "permission-request.wav",
+    "ko": "권한 승인이 필요합니다.",
+    "ja": "権限の承認が必要です。",
+    "en": "Permission approval is required."
+  },
+  "PreCompact": {
+    "file": "pre-compact.wav",
+    "ko": "대화 내용을 정리합니다.",
+    "ja": "会話の内容を整理します。",
+    "en": "Compacting the conversation."
+  },
+  "PostCompact": {
+    "file": "post-compact.wav",
+    "ko": "대화 내용 정리가 끝났습니다.",
+    "ja": "会話内容の整理が終了しました。",
+    "en": "Conversation compaction has ended."
+  },
+  "SubagentStart": {
+    "file": "subagent-start.wav",
+    "ko": "보조 에이전트가 작업을 시작합니다.",
+    "ja": "サブエージェントが作業を開始します。",
+    "en": "A subagent has started working."
+  },
+  "SubagentStop": {
+    "file": "subagent-stop.wav",
+    "ko": "보조 에이전트 작업이 종료되었습니다.",
+    "ja": "サブエージェントの作業が終了しました。",
+    "en": "The subagent has stopped working."
+  },
+  "Stop": {
+    "file": "stop.wav",
+    "ko": "코덱스 응답을 마무리합니다.",
+    "ja": "Codexの応答を終了します。",
+    "en": "Finishing the Codex response."
+  }
+}
