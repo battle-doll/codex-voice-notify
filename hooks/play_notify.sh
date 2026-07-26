@@ -117,7 +117,28 @@ fi
 
 event_name=$(
     /usr/bin/head -c 1048577 |
-        /usr/bin/plutil -extract hook_event_name raw -- - 2>/dev/null
+        /usr/bin/osascript -l JavaScript -e '
+            ObjC.import("Foundation");
+            var input = $.NSFileHandle.fileHandleWithStandardInput
+                .readDataToEndOfFile;
+            var text = ObjC.unwrap(
+                $.NSString.alloc.initWithDataEncoding(
+                    input,
+                    $.NSUTF8StringEncoding
+                )
+            );
+            var eventName = "";
+            try {
+                var payload = JSON.parse(text);
+                if (
+                    payload &&
+                    typeof payload.hook_event_name === "string"
+                ) {
+                    eventName = payload.hook_event_name;
+                }
+            } catch (error) {}
+            eventName;
+        ' 2>/dev/null
 ) || exit 0
 event_file=$(event_slug "$event_name") || exit 0
 
