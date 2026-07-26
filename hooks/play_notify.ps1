@@ -87,7 +87,12 @@ $Voice = "female"
 $Language = "ko"
 $MinimumInterval = 450
 $EventEnabled = @("PreToolUse", "PostToolUse") -notcontains $EventName
-$ConfigPath = Join-Path $HOME ".config\codex-voice-notify\settings.json"
+if ($env:CODEX_VOICE_NOTIFY_CONFIG) {
+    $ConfigPath = [IO.Path]::GetFullPath($env:CODEX_VOICE_NOTIFY_CONFIG)
+}
+else {
+    $ConfigPath = Join-Path $HOME ".config\codex-voice-notify\settings.json"
+}
 if ((Test-Path -LiteralPath $ConfigPath -PathType Leaf) -and
     ((Get-Item -LiteralPath $ConfigPath).Length -le 65536)) {
     try {
