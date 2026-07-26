@@ -124,11 +124,19 @@ def main() -> int:
         if not runtime_path.is_file() or runtime_path.stat().st_size == 0:
             fail("missing system-native macOS runtime: %s" % runtime_path)
         runtime_text = runtime_path.read_text("utf-8")
-        for forbidden_reference in ("/usr/bin/python3", "play_notify.py"):
+        for forbidden_reference in (
+            "/usr/bin/python3",
+            "play_notify.py",
+            "/dev/stdin",
+        ):
             if forbidden_reference in runtime_text:
                 fail(
-                    "macOS runtime must not require Python: %s" % runtime_path
+                    "macOS runtime contains an unsupported dependency or stdin path: %s"
+                    % runtime_path
                 )
+    macos_hook_text = (ROOT / "hooks" / "play_notify.sh").read_text("utf-8")
+    if "/usr/bin/plutil -extract hook_event_name raw -- -" not in macos_hook_text:
+        fail("macOS hook must read its JSON payload from plutil's stdin marker")
     for required_tool in (
         "/bin/sh",
         "/usr/bin/plutil",

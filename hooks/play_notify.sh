@@ -117,7 +117,7 @@ fi
 
 event_name=$(
     /usr/bin/head -c 1048577 |
-        /usr/bin/plutil -extract hook_event_name raw -- /dev/stdin 2>/dev/null
+        /usr/bin/plutil -extract hook_event_name raw -- - 2>/dev/null
 ) || exit 0
 event_file=$(event_slug "$event_name") || exit 0
 
