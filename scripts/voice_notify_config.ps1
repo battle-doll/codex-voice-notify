@@ -1,6 +1,6 @@
 param(
     [Parameter(Position = 0)]
-    [ValidateSet("show", "set", "mute", "unmute", "reset", "test")]
+    [ValidateSet("show", "set", "mute", "unmute", "reset", "test", "setup")]
     [string]$Command = "show",
     [ValidateSet("female", "male")]
     [string]$Voice,
@@ -22,13 +22,23 @@ param(
     [switch]$EnableEvent,
     [switch]$DisableEvent,
     [int]$MinIntervalMs = -1,
-    [switch]$DryRun
+    [switch]$DryRun,
+    [switch]$SkipAudioTest,
+    [switch]$OpenHooks,
+    [string]$CodexCommand
 )
 
 $ErrorActionPreference = "Stop"
 $PluginRoot = Split-Path -Parent $PSScriptRoot
-$ConfigDirectory = Join-Path $HOME ".config\codex-voice-notify"
-$ConfigPath = Join-Path $ConfigDirectory "settings.json"
+if ($env:CODEX_VOICE_NOTIFY_CONFIG) {
+    $ConfigPath = [IO.Path]::GetFullPath($env:CODEX_VOICE_NOTIFY_CONFIG)
+    $ConfigDirectory = Split-Path -Parent $ConfigPath
+}
+else {
+    $ConfigDirectory = Join-Path $HOME ".config\codex-voice-notify"
+    $ConfigPath = Join-Path $ConfigDirectory "settings.json"
+}
+$MinimumHooksCodexVersion = [version]"0.145.0"
 $EventFiles = @{
     SessionStart      = "session-start"
     UserPromptSubmit  = "user-prompt-submit"
@@ -106,6 +116,75 @@ function Save-Settings($Settings) {
     Write-Output "Saved $ConfigPath"
 }
 
+function Get-CodexPath([string]$ExplicitPath) {
+    if ($ExplicitPath) {
+        return [IO.Path]::GetFullPath($ExplicitPath)
+    }
+    if ($env:CODEX_VOICE_NOTIFY_CODEX) {
+        return [IO.Path]::GetFullPath($env:CODEX_VOICE_NOTIFY_CODEX)
+    }
+    foreach ($Name in @("codex.cmd", "codex.exe", "codex")) {
+        $Candidate = Get-Command $Name -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($null -ne $Candidate) {
+            return $Candidate.Source
+        }
+    }
+    return $null
+}
+
+function Get-CodexVersionInfo([string]$CodexPath) {
+    try {
+        $VersionOutput = (& $CodexPath --version 2>&1 | Out-String).Trim()
+        $VersionExitCode = $LASTEXITCODE
+    }
+    catch {
+        return $null
+    }
+    if ($VersionExitCode -ne 0) {
+        return $null
+    }
+    if ($VersionOutput -notmatch "(?i)^\s*(?:openai\s+)?codex(?:-cli)?\s+(?:\(\s*)?v?(\d+)\.(\d+)\.(\d+)\s*\)?\s*$") {
+        return $null
+    }
+    return [pscustomobject]@{
+        Version = [version]("$($Matches[1]).$($Matches[2]).$($Matches[3])")
+        Output  = $VersionOutput
+    }
+}
+
+function Open-HookTrustTerminal([string]$CodexPath) {
+    $EscapedCodexPath = $CodexPath.Replace("'", "''")
+    $EscapedWorkingDirectory = (Get-Location).Path.Replace("'", "''")
+    $LaunchCommand = @"
+`$Host.UI.RawUI.WindowTitle = "Voice Notify hook setup"
+Write-Host ""
+Write-Host "Voice Notify setup is ready. In Codex, type /hooks and review the bundled hook."
+Write-Host ""
+& '$EscapedCodexPath' --no-alt-screen -C '$EscapedWorkingDirectory'
+"@
+    $EncodedCommand = [Convert]::ToBase64String(
+        [Text.Encoding]::Unicode.GetBytes($LaunchCommand)
+    )
+    $PowerShellPath = (Get-Process -Id $PID).Path
+    try {
+        Start-Process -FilePath $PowerShellPath `
+            -ArgumentList @(
+                "-NoLogo",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-NoExit",
+                "-EncodedCommand",
+                $EncodedCommand
+            ) `
+            -WindowStyle Normal | Out-Null
+    }
+    catch {
+        return $false
+    }
+    return $true
+}
+
 $Settings = Get-Settings
 switch ($Command) {
     "show" {
@@ -164,6 +243,84 @@ switch ($Command) {
             $Player = New-Object System.Media.SoundPlayer($AudioPath)
             $Player.PlaySync()
         }
+        exit 0
+    }
+    "setup" {
+        if ($Voice) {
+            $Settings.voice = $Voice
+        }
+        if ($Language) {
+            $Settings.language = $Language
+        }
+        $Settings.enabled = $true
+
+        $ResolvedCodexPath = Get-CodexPath $CodexCommand
+        if (-not $ResolvedCodexPath) {
+            [Console]::Error.WriteLine(
+                "Codex CLI was not found. Install or expose Codex on PATH, then rerun setup."
+            )
+            exit 3
+        }
+        $CodexInfo = Get-CodexVersionInfo $ResolvedCodexPath
+        if ($null -eq $CodexInfo) {
+            [Console]::Error.WriteLine(
+                "Could not determine the Codex CLI version from $ResolvedCodexPath."
+            )
+            exit 3
+        }
+        Write-Output "Codex CLI: $($CodexInfo.Version) ($ResolvedCodexPath)"
+        if ($CodexInfo.Version -lt $MinimumHooksCodexVersion) {
+            [Console]::Error.WriteLine((
+                "Codex CLI {0} or newer is required for /hooks. Update Codex, then rerun setup." -f
+                $MinimumHooksCodexVersion
+            ))
+            exit 3
+        }
+
+        $AudioPath = Join-Path $PluginRoot (
+            "assets\audio\$($Settings.voice)\$($Settings.language)\$($EventFiles.Stop).wav"
+        )
+        if (-not (Test-Path -LiteralPath $AudioPath -PathType Leaf)) {
+            [Console]::Error.WriteLine("Stop audio file is unavailable: $AudioPath")
+            exit 1
+        }
+        Write-Output "Stop audio: $AudioPath"
+        if (-not $DryRun -and -not $SkipAudioTest) {
+            $Player = New-Object System.Media.SoundPlayer($AudioPath)
+            $Player.PlaySync()
+        }
+
+        if ($DryRun) {
+            Write-Output (
+                "Dry run: would save voice={0} language={1}." -f
+                $Settings.voice,
+                $Settings.language
+            )
+        }
+        else {
+            Save-Settings $Settings
+        }
+
+        if ($OpenHooks) {
+            if ($DryRun) {
+                Write-Output "Dry run: would open a terminal for the /hooks trust step."
+            }
+            else {
+                if (Open-HookTrustTerminal $ResolvedCodexPath) {
+                    Write-Output "Started a terminal for Codex. Type /hooks, review the Voice Notify hook, and trust it."
+                }
+                else {
+                    [Console]::Error.WriteLine(
+                        "Could not open a terminal automatically. Run Codex, enter /hooks, and review the Voice Notify hook."
+                    )
+                    exit 4
+                }
+            }
+        }
+        else {
+            Write-Output "Next: run Codex, enter /hooks, and review the Voice Notify hook."
+        }
+        Write-Output "After trust is granted, fully restart Codex before testing lifecycle events."
         exit 0
     }
 }

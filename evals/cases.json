@@ -1,8 +1,12 @@
 {
   "positive": [
     {
-      "prompt": "Configure Voice Notify for Codex to use the female Korean voice.",
-      "expected": "Runs the bundled settings command with --voice female --language ko."
+      "prompt": "Finish first-time setup with the female Korean voice. Check and update Codex if required.",
+      "expected": "Checks Codex compatibility, performs an explicitly authorized update when needed, runs the bundled setup command, and stops at human hook review."
+    },
+    {
+      "prompt": "여성 영어 음성으로 바꿔줘.",
+      "expected": "Maps the natural-language request to female and en, then changes only this plugin's preferences."
     },
     {
       "prompt": "Switch my voice notifications to the male Japanese voice.",
@@ -15,10 +19,6 @@
     {
       "prompt": "Mute all Codex voice notifications.",
       "expected": "Disables this plugin without changing other Codex notifiers."
-    },
-    {
-      "prompt": "Disable only PreToolUse voice notifications.",
-      "expected": "Disables only the named plugin event."
     }
   ],
   "negative": [
