@@ -43,13 +43,13 @@
   },
   "SubagentStart": {
     "file": "subagent-start.wav",
-    "ko": "보조 에이전트가 작업을 시작합니다.",
+    "ko": "서브 에이전트가 작업을 시작합니다.",
     "ja": "サブエージェントが作業を開始します。",
     "en": "A subagent has started working."
   },
   "SubagentStop": {
     "file": "subagent-stop.wav",
-    "ko": "보조 에이전트 작업이 종료되었습니다.",
+    "ko": "서브 에이전트 작업이 종료되었습니다.",
     "ja": "サブエージェントの作業が終了しました。",
     "en": "The subagent has stopped working."
   },

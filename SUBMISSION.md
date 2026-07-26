@@ -1,21 +1,22 @@
 # Public plugin submission notes
 
-Status: package draft prepared; final legal attestation and submission are
-pending confirmation of the bundled WAV redistribution scope.
+Status: version update package prepared for submission.
 
 - Slug: `codex-voice-notify`
 - Display name: `Voice Notify for Codex`
 - Developer: `battle-doll`
 - Category: `Developer Tools`
-- Version: `0.1.0`
+- Version: `0.1.1`
 - Platforms: macOS and Windows
 - Authentication: none
 - External network access: none
 - Data collection: none
 - Positive tests: 5
 - Negative tests: 3
-- Release note: Initial release with ten lifecycle events, two voices, and
-  Korean, Japanese, and English audio.
+- Release note: Updated the female voice in all three languages, regenerated
+  the English set with natural English prosody, changed the Korean subagent
+  wording, disabled noisy tool-start/tool-end notifications by default, and
+  documented hook trust plus restart behavior.
 
 Required human steps in the OpenAI submission portal:
 

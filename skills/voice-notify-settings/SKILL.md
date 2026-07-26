@@ -37,5 +37,8 @@ powershell.exe -NoProfile -File "$env:PLUGIN_ROOT\scripts\voice_notify_config.ps
 ```
 
 After installation, remind the user that plugin hooks require one-time review and
-trust in `/hooks`. Never bypass hook trust on the user's behalf. The script stores
-only voice-notification preferences. It never reads or retains conversation content.
+trust in `/hooks`. After trust is granted, instruct the user to fully restart Codex
+before testing real lifecycle events; an already-running process may not activate
+newly trusted hooks. Never bypass or automatically grant hook trust on the user's
+behalf. The script stores only voice-notification preferences. It never reads or
+retains conversation content.
