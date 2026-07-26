@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "release": "0.1.1",
+  "release": "0.1.2",
   "asset_count": 60,
   "files": [
     {
@@ -100,9 +100,9 @@
       "language": "ko",
       "path": "assets/audio/female/ko/subagent-start.wav",
       "text": "서브 에이전트가 작업을 시작합니다.",
-      "sha256": "161ad77f6dfc686e588018eee1c5a83da18a3de4664703afeed26dfff665d796",
-      "bytes": 230444,
-      "duration_seconds": 4.8,
+      "sha256": "f13e16f21827072a944f766b0cdfe6eb4f69f2da3403a6f9e14e13e47f28c690",
+      "bytes": 163244,
+      "duration_seconds": 3.4,
       "sample_rate": 24000,
       "channels": 1,
       "sample_width_bytes": 2
