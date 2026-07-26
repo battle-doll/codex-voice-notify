@@ -32,12 +32,15 @@ EVENT_FILES = {
 }
 VOICES = frozenset(("female", "male"))
 LANGUAGES = frozenset(("ko", "ja", "en"))
+DEFAULT_DISABLED_EVENTS = frozenset(("PreToolUse", "PostToolUse"))
 DEFAULT_SETTINGS = {
     "enabled": True,
     "voice": "female",
     "language": "ko",
     "min_interval_ms": 450,
-    "events": {event: True for event in EVENT_FILES},
+    "events": {
+        event: event not in DEFAULT_DISABLED_EVENTS for event in EVENT_FILES
+    },
 }
 MAX_INPUT_BYTES = 1024 * 1024
 MAX_SETTINGS_BYTES = 64 * 1024

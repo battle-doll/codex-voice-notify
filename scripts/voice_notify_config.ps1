@@ -45,7 +45,7 @@ $EventFiles = @{
 function New-DefaultSettings {
     $Events = [ordered]@{}
     foreach ($Name in $EventFiles.Keys) {
-        $Events[$Name] = $true
+        $Events[$Name] = @("PreToolUse", "PostToolUse") -notcontains $Name
     }
     return [ordered]@{
         enabled         = $true

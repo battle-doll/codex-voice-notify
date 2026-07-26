@@ -16,6 +16,9 @@ AUDIO_ROOT = ROOT / "assets" / "audio"
 
 
 def main() -> int:
+    plugin_manifest = json.loads(
+        (ROOT / ".codex-plugin" / "plugin.json").read_text("utf-8")
+    )
     phrases = json.loads((AUDIO_ROOT / "phrases.json").read_text("utf-8"))
     records = []
     for voice in ("female", "male"):
@@ -43,7 +46,7 @@ def main() -> int:
 
     manifest = {
         "schema_version": 1,
-        "release": "0.1.0",
+        "release": plugin_manifest["version"],
         "asset_count": len(records),
         "files": records,
     }
