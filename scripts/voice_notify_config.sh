@@ -277,7 +277,7 @@ shell_quote() {
 
 open_hook_terminal() {
     working_directory=$(pwd -P)
-    terminal_command="printf '\\nVoice Notify setup is ready. In Codex, type /hooks and review the bundled hook.\\n\\n'; exec $(shell_quote "$codex_path") --no-alt-screen -C $(shell_quote "$working_directory")"
+    terminal_command="printf '\\nVoice Notify opened this new Codex CLI terminal. Type /hooks here and review the bundled hook.\\n\\n'; exec $(shell_quote "$codex_path") --no-alt-screen -C $(shell_quote "$working_directory")"
     /usr/bin/osascript \
         -e 'on run argv' \
         -e 'set terminalCommand to item 1 of argv' \
@@ -429,13 +429,14 @@ case "$command_name" in
         fi
         if [ "$open_hooks" = true ]; then
             if [ "$dry_run" = true ]; then
-                printf '%s\n' "Dry run: would open a terminal for the /hooks trust step."
+                printf '%s\n' \
+                    "Dry run: would open a new terminal and start Codex CLI for manual /hooks review."
             elif open_hook_terminal; then
                 printf '%s\n' \
-                    "Opened Terminal. Type /hooks, review the Voice Notify hook, and trust it."
+                    "Started Codex CLI in a new Terminal window. Type /hooks in that window, review the Voice Notify hook, and trust it."
             else
                 printf '%s\n' \
-                    "Could not open Terminal automatically. Run Codex, enter /hooks, and review the Voice Notify hook." >&2
+                    "Could not open a new Codex CLI Terminal automatically. Start Codex CLI yourself, enter /hooks, and review the Voice Notify hook." >&2
                 exit 4
             fi
         else

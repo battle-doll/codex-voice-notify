@@ -2,7 +2,7 @@
   "positive": [
     {
       "prompt": "Finish first-time setup with the female Korean voice. Check and update Codex if required.",
-      "expected": "Checks Codex compatibility, performs an explicitly authorized update when needed, runs the bundled setup command, and stops at human hook review."
+      "expected": "Checks Codex compatibility, performs an explicitly authorized update when needed, runs bundled setup with the open-hooks option, opens a new terminal, starts the verified Codex CLI there, and leaves /hooks entry, review, and trust to the user."
     },
     {
       "prompt": "여성 영어 음성으로 바꿔줘.",

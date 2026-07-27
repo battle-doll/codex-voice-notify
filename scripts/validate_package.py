@@ -87,6 +87,8 @@ def main() -> int:
         for marker in ("first-time setup", "set up voice notify")
     ):
         fail("the first default prompt must offer guided first-time setup")
+    if "new codex cli terminal" not in default_prompts[0].lower():
+        fail("the first default prompt must request a new Codex CLI terminal")
     skill_text = (
         ROOT / "skills" / "voice-notify-settings" / "SKILL.md"
     ).read_text("utf-8")
@@ -96,6 +98,8 @@ def main() -> int:
         "--open-hooks",
         "-OpenHooks",
         "voice_notify_config.sh",
+        "new visible terminal",
+        "starts the verified Codex CLI",
     ):
         if required_text not in skill_text:
             fail("settings skill is missing setup guidance: %s" % required_text)
@@ -105,17 +109,36 @@ def main() -> int:
     )
     if not safe_trust_guidance.search(skill_text):
         fail("settings skill must preserve the mandatory hook trust boundary")
-    setup_launchers = (
-        ROOT / "scripts" / "voice_notify_config.py",
-        ROOT / "scripts" / "voice_notify_config.ps1",
-        ROOT / "scripts" / "voice_notify_config.sh",
-    )
-    for launcher_path in setup_launchers:
+    setup_launchers = {
+        ROOT / "scripts" / "voice_notify_config.py": (
+            "/usr/bin/osascript",
+            'tell application "Terminal"',
+            "activate",
+            "exec %s --no-alt-screen -C %s",
+        ),
+        ROOT / "scripts" / "voice_notify_config.ps1": (
+            "Start-Process",
+            "-WindowStyle Normal",
+            "& '$EscapedCodexPath' --no-alt-screen -C '$EscapedWorkingDirectory'",
+        ),
+        ROOT / "scripts" / "voice_notify_config.sh": (
+            "/usr/bin/osascript",
+            "do script terminalCommand",
+            'exec $(shell_quote "$codex_path") --no-alt-screen -C',
+        ),
+    }
+    for launcher_path, required_markers in setup_launchers.items():
         launcher_text = launcher_path.read_text("utf-8")
         if "--dangerously-bypass-hook-trust" in launcher_text:
             fail("setup launcher must not bypass hook trust: %s" % launcher_path)
         if "/hooks" not in launcher_text:
             fail("setup launcher must hand off visibly to /hooks: %s" % launcher_path)
+        for marker in required_markers:
+            if marker not in launcher_text:
+                fail(
+                    "setup launcher must start the verified Codex CLI in a new "
+                    "terminal (%s): %s" % (marker, launcher_path)
+                )
     macos_runtime_paths = (
         ROOT / "hooks" / "play_notify.sh",
         ROOT / "scripts" / "voice_notify_config.sh",

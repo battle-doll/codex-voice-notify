@@ -156,9 +156,10 @@ function Open-HookTrustTerminal([string]$CodexPath) {
     $EscapedCodexPath = $CodexPath.Replace("'", "''")
     $EscapedWorkingDirectory = (Get-Location).Path.Replace("'", "''")
     $LaunchCommand = @"
-`$Host.UI.RawUI.WindowTitle = "Voice Notify hook setup"
+`$Host.UI.RawUI.WindowTitle = "Voice Notify - type /hooks in Codex"
 Write-Host ""
-Write-Host "Voice Notify setup is ready. In Codex, type /hooks and review the bundled hook."
+Write-Host "Voice Notify opened this new Codex CLI terminal."
+Write-Host "Type /hooks here and review the bundled hook."
 Write-Host ""
 & '$EscapedCodexPath' --no-alt-screen -C '$EscapedWorkingDirectory'
 "@
@@ -303,15 +304,21 @@ switch ($Command) {
 
         if ($OpenHooks) {
             if ($DryRun) {
-                Write-Output "Dry run: would open a terminal for the /hooks trust step."
+                Write-Output (
+                    "Dry run: would open a new terminal and start Codex CLI " +
+                    "for manual /hooks review."
+                )
             }
             else {
                 if (Open-HookTrustTerminal $ResolvedCodexPath) {
-                    Write-Output "Started a terminal for Codex. Type /hooks, review the Voice Notify hook, and trust it."
+                    Write-Output (
+                        "Started Codex CLI in a new terminal window. Type /hooks " +
+                        "in that window, review the Voice Notify hook, and trust it."
+                    )
                 }
                 else {
                     [Console]::Error.WriteLine(
-                        "Could not open a terminal automatically. Run Codex, enter /hooks, and review the Voice Notify hook."
+                        "Could not open a new Codex CLI terminal automatically. Start Codex CLI yourself, enter /hooks, and review the Voice Notify hook."
                     )
                     exit 4
                 }

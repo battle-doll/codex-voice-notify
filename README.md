@@ -65,17 +65,19 @@ The guided setup:
    required.
 2. Saves the selected voice and language.
 3. Plays the local `Stop` notification as a test.
-4. Opens a Codex terminal with the `/hooks` instruction.
+4. Opens a new terminal window and starts the verified Codex CLI in it; it does
+   not merely print a `/hooks` instruction.
 
 The bundled setup script only reports compatibility; it does not modify the
 host installation by itself. Codex performs an authorized update after
 inspecting whether the CLI came from npm, the Homebrew cask, or another source.
 
-Enter `/hooks`, inspect the bundled command, and explicitly trust it. Then fully
-restart Codex before testing lifecycle events. Hook trust is persisted, but an
-already-running Codex process may not activate newly trusted plugin hooks until
-the next launch. Codex deliberately does not trust third-party hooks at install
-time, and the plugin never bypasses that review.
+In the newly opened Codex CLI terminal, enter `/hooks`, inspect the bundled
+command, and explicitly trust it. Then fully restart Codex before testing
+lifecycle events. Hook trust is persisted, but an already-running Codex process
+may not activate newly trusted plugin hooks until the next launch. Codex
+deliberately does not trust third-party hooks at install time, and the plugin
+never bypasses that review.
 
 If an update cannot replace a currently running CLI executable, exit that CLI,
 run the displayed update command in a separate terminal, and start setup again.
@@ -132,7 +134,7 @@ actually asks for permission.
 
 ## Compatibility
 
-Version 0.1.3 supports macOS and Windows with system-provided audio and
+Version 0.1.4 supports macOS and Windows with system-provided audio and
 scripting components. macOS does not require Python or Xcode Command Line
 Tools. Guided hook setup requires Codex CLI `0.145.0` or newer. Linux is not yet
 supported.
