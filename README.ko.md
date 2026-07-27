@@ -52,16 +52,17 @@ Codex에 GitHub 저장소 링크를 주고 “이 플러그인을 설치해줘�
    허용한 경우 npm 또는 Homebrew 설치를 필요에 따라 업데이트합니다.
 2. 선택한 성별과 언어를 저장합니다.
 3. 로컬 `Stop` 알림을 시험 재생합니다.
-4. `/hooks` 안내가 표시된 Codex 터미널을 엽니다.
+4. 새 터미널 창을 열고 그 안에서 확인된 Codex CLI를 실행합니다. 단순히
+   `/hooks` 입력 안내만 표시하지 않습니다.
 
 번들 설정 스크립트는 호환성만 확인하며 호스트 설치를 임의로 변경하지 않습니다.
 Codex가 npm, Homebrew cask 또는 다른 설치 경로를 확인한 뒤 명시적으로 허용된
 업데이트를 수행합니다.
 
-터미널에서 `/hooks`를 입력하고 번들 명령을 직접 검토한 뒤 신뢰하십시오.
-신뢰 처리 후에는 실제 이벤트를 테스트하기 전에 Codex를 완전히 종료하고 다시
-실행해야 합니다. 플러그인은 훅 신뢰를 우회하거나 기존 Codex 알림 설정을
-수정하지 않습니다.
+새로 열린 Codex CLI 터미널 창에서 사용자가 직접 `/hooks`를 입력하고 번들
+명령을 검토한 뒤 신뢰하십시오. 신뢰 처리 후에는 실제 이벤트를 테스트하기
+전에 Codex를 완전히 종료하고 다시 실행해야 합니다. 플러그인은 훅 신뢰를
+우회하거나 기존 Codex 알림 설정을 수정하지 않습니다.
 
 실행 중인 CLI 파일 때문에 업데이트가 실패하면 해당 CLI를 종료하고, 안내된
 업데이트 명령을 별도 터미널에서 실행한 뒤 최초 설정을 다시 시작하십시오.
@@ -115,7 +116,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_con
 
 ## 호환성
 
-버전 0.1.3은 macOS와 Windows를 지원합니다. macOS에서는 Python이나 Xcode
+버전 0.1.4는 macOS와 Windows를 지원합니다. macOS에서는 Python이나 Xcode
 Command Line Tools가 필요하지 않습니다. `/hooks` 안내가 포함된 최초 설정은
 Codex CLI 0.145.0 이상이 필요합니다. Linux는 아직 지원하지 않습니다.
 

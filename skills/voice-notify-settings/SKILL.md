@@ -65,10 +65,11 @@ Use this workflow when the user asks to finish setup after installation.
    - Verify the update by running the same exact absolute path with `--version`.
 5. Verify that the macOS or Windows settings script exists under the resolved
    plugin root.
-6. Run the matching setup command below with the exact verified CLI path. It
-   checks the CLI again before changing settings, saves the preferences, tests
-   the local `Stop` audio, and opens a visible terminal with the `/hooks`
-   instruction.
+6. Run the matching setup command below with the exact verified CLI path. Do
+   not stop after merely telling the user to enter `/hooks`. The setup command
+   checks the CLI again, saves the preferences, tests the local `Stop` audio,
+   opens a new visible terminal, and starts the verified Codex CLI
+   interactively in that window. It leaves `/hooks` for the user to type.
 
 macOS:
 
@@ -102,10 +103,14 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File $SettingsScript show
 if ($LASTEXITCODE -ne 0) { throw "Voice Notify settings verification failed." }
 ```
 
-If a terminal cannot be opened, tell the user to start Codex CLI and enter
-`/hooks`. The user must confirm that the test audio was audible, inspect and
-trust the Voice Notify hook personally, fully restart Codex, and trigger one
-enabled lifecycle event to confirm real hook playback. Never edit the trust
+Do not replace the setup command with written `/hooks` instructions. Use the
+manual fallback only when the setup launcher reports that it could not open
+the new Codex CLI terminal. In that case, tell the user to start Codex CLI and
+enter `/hooks`. The user must confirm that the test audio was audible, type
+`/hooks` in the newly opened Codex CLI, inspect and trust the Voice Notify hook
+personally, fully restart Codex, and trigger one enabled lifecycle event to
+confirm real hook playback. Never enter `/hooks` automatically.
+Never edit the trust
 store or use `--dangerously-bypass-hook-trust`.
 
 Treat setup as complete only after the final `show` output has `enabled: true`

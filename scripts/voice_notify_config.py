@@ -78,13 +78,16 @@ def open_hook_trust_terminal(command: pathlib.Path, cwd: pathlib.Path) -> bool:
     if not osascript.is_file():
         return False
     shell_command = (
-        "printf '\\nVoice Notify setup is ready. "
-        "In Codex, type /hooks and review the bundled hook.\\n\\n'; "
+        "printf '\\nVoice Notify opened this new Codex CLI terminal. "
+        "Type /hooks here and review the bundled hook.\\n\\n'; "
         "exec %s --no-alt-screen -C %s"
         % (shlex.quote(str(command)), shlex.quote(str(cwd)))
     )
     apple_script = (
-        'tell application "Terminal" to do script "%s"'
+        'tell application "Terminal"\n'
+        "activate\n"
+        'do script "%s"\n'
+        "end tell"
         % _apple_script_string(shell_command)
     )
     try:
@@ -225,13 +228,19 @@ def run_setup(args: argparse.Namespace, settings: dict) -> int:
 
     if args.open_hooks:
         if args.dry_run:
-            print("Dry run: would open a terminal for the /hooks trust step.")
+            print(
+                "Dry run: would open a new terminal and start Codex CLI "
+                "for manual /hooks review."
+            )
         elif open_hook_trust_terminal(codex_command, pathlib.Path.cwd()):
-            print("Opened Terminal. Type /hooks, review the Voice Notify hook, and trust it.")
+            print(
+                "Started Codex CLI in a new Terminal window. Type /hooks in "
+                "that window, review the Voice Notify hook, and trust it."
+            )
         else:
             print(
-                "Could not open Terminal automatically. Run Codex, enter /hooks, "
-                "and review the Voice Notify hook.",
+                "Could not open a new Codex CLI Terminal automatically. Start "
+                "Codex CLI yourself, enter /hooks, and review the Voice Notify hook.",
                 file=sys.stderr,
             )
             return 4

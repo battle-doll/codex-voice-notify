@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.4 - 2026-07-28
+
+- Clarified and hardened guided setup so it opens a new terminal and starts the
+  verified Codex CLI instead of merely displaying a `/hooks` instruction.
+- Preserved mandatory human `/hooks` entry, review, and hook trust.
+- Strengthened release checks for the exact Codex CLI terminal handoff on
+  macOS and Windows.
+- Kept audio assets and notification defaults unchanged from 0.1.3.
+
 ## 0.1.3 - 2026-07-27
 
 - Added guided first-time setup on macOS and Windows: save the selected voice

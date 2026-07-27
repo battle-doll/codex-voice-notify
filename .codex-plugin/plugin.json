@@ -1,6 +1,6 @@
 {
   "name": "codex-voice-notify",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "license": "MIT",
   "description": "Offline multilingual voice notifications for Codex lifecycle events on macOS and Windows.",
   "author": {
@@ -35,7 +35,7 @@
     "privacyPolicyURL": "https://github.com/battle-doll/codex-voice-notify/blob/main/PRIVACY.md",
     "termsOfServiceURL": "https://github.com/battle-doll/codex-voice-notify/blob/main/TERMS.md",
     "defaultPrompt": [
-      "Set up Voice Notify with the female Korean voice. Update Codex if needed, test playback, and show me the /hooks trust step.",
+      "Set up Voice Notify: female Korean. Update Codex if needed, then open a new Codex CLI terminal so I can enter /hooks there.",
       "Change Voice Notify to the male Japanese voice.",
       "Show me how to control Voice Notify with natural-language requests."
     ],

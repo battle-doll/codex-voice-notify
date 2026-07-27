@@ -214,6 +214,8 @@ class VoiceNotifySetupTests(unittest.TestCase):
 
     def test_macos_hook_terminal_command_keeps_human_review(self) -> None:
         completed = mock.Mock(returncode=0)
+        codex_path = pathlib.PurePosixPath("/Applications/Codex CLI/codex")
+        working_directory = pathlib.PurePosixPath("/tmp/user's example")
         with mock.patch.object(voice_notify_config.sys, "platform", "darwin"):
             with mock.patch.object(
                 voice_notify_config.pathlib.Path, "is_file", return_value=True
@@ -222,15 +224,25 @@ class VoiceNotifySetupTests(unittest.TestCase):
                     voice_notify_config.subprocess, "run", return_value=completed
                 ) as run:
                     opened = voice_notify_config.open_hook_trust_terminal(
-                        pathlib.Path("/usr/local/bin/codex"),
-                        pathlib.Path("/tmp/example"),
+                        codex_path,
+                        working_directory,
                     )
         self.assertTrue(opened)
         command = run.call_args.args[0]
         self.assertEqual(command[0].replace("\\", "/"), "/usr/bin/osascript")
         self.assertEqual(command[1], "-e")
         self.assertIn("/hooks", command[2])
-        self.assertIn("--no-alt-screen", command[2])
+        self.assertIn('tell application "Terminal"', command[2])
+        self.assertIn("activate", command[2])
+        self.assertIn("do script", command[2])
+        expected_exec = "exec %s --no-alt-screen -C %s" % (
+            voice_notify_config.shlex.quote(str(codex_path)),
+            voice_notify_config.shlex.quote(str(working_directory)),
+        )
+        self.assertIn(
+            voice_notify_config._apple_script_string(expected_exec),
+            command[2],
+        )
         self.assertNotIn("--dangerously-bypass-hook-trust", command[2])
 
 
