@@ -510,7 +510,29 @@ def _validate_source() -> None:
             raise ReleaseBuildError("%s failed" % label)
 
 
-def build_release(*, check_only: bool, force: bool) -> int:
+def _write_sha256_output(output: pathlib.Path | None, digest: str) -> None:
+    if output is None:
+        return
+    resolved_output = output.expanduser().resolve()
+    try:
+        resolved_output.relative_to(ROOT.resolve())
+    except ValueError:
+        pass
+    else:
+        raise ReleaseBuildError(
+            "The SHA-256 output must be outside the release source tree"
+        )
+    resolved_output.parent.mkdir(parents=True, exist_ok=True)
+    with resolved_output.open("w", encoding="ascii", newline="\n") as output_file:
+        output_file.write(digest + "\n")
+
+
+def build_release(
+    *,
+    check_only: bool,
+    force: bool,
+    sha256_output: pathlib.Path | None = None,
+) -> int:
     _validate_source()
 
     first_snapshot = _capture_working_tree()
@@ -561,6 +583,7 @@ def build_release(*, check_only: bool, force: bool) -> int:
             raise ReleaseBuildError("The working tree changed during the release build")
 
         if check_only:
+            _write_sha256_output(sha256_output, first_archive_digest)
             print(
                 "PASS: deterministic artifact check for %s (%d files, sha256=%s)"
                 % (version, len(second_snapshot), first_archive_digest)
@@ -570,6 +593,7 @@ def build_release(*, check_only: bool, force: bool) -> int:
         if output.exists():
             existing_digest = hashlib.sha256(output.read_bytes()).hexdigest()
             if existing_digest == first_archive_digest:
+                _write_sha256_output(sha256_output, existing_digest)
                 print(
                     "PASS: existing release artifact already matches: %s (sha256=%s)"
                     % (output, existing_digest)
@@ -582,6 +606,7 @@ def build_release(*, check_only: bool, force: bool) -> int:
                 )
         os.replace(first_archive, output)
         os.chmod(output, 0o644)
+        _write_sha256_output(sha256_output, first_archive_digest)
         print(
             "PASS: wrote %s (%d files, sha256=%s)"
             % (output, len(second_snapshot), first_archive_digest)
@@ -606,11 +631,22 @@ def main() -> int:
         action="store_true",
         help="Replace an existing same-version ZIP after all checks pass.",
     )
+    parser.add_argument(
+        "--sha256-output",
+        type=pathlib.Path,
+        help=(
+            "Write the validated ZIP SHA-256 to this path outside the source tree."
+        ),
+    )
     arguments = parser.parse_args()
     if arguments.check_only and arguments.force:
         parser.error("--force cannot be combined with --check-only")
     try:
-        return build_release(check_only=arguments.check_only, force=arguments.force)
+        return build_release(
+            check_only=arguments.check_only,
+            force=arguments.force,
+            sha256_output=arguments.sha256_output,
+        )
     except ReleaseBuildError as error:
         print("ERROR: %s" % error, file=sys.stderr)
         return 1
