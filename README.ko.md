@@ -1,8 +1,8 @@
 # 코덱스 보이스 노티
 
 macOS·Windows용 오프라인 다국어 Codex 생명주기 음성 알림 플러그인입니다.
-따뜻한 허스키 여성 음성과 낮고 밝은 남성 음성을 한국어·일본어·영어로
-제공합니다.
+따뜻한 허스키 여성 음성과 낮고 밝은 남성 음성을 한국어·일본어·영어·
+러시아어·중국어 간체로 제공합니다.
 
 OpenAI와 제휴하거나 OpenAI가 보증한 공식 플러그인이 아닙니다. 코드는 MIT
 오픈소스이며 음성 자산에는 별도 라이선스가 적용됩니다.
@@ -10,7 +10,7 @@ OpenAI와 제휴하거나 OpenAI가 보증한 공식 플러그인이 아닙니�
 ## 주요 기능
 
 - Codex 이벤트 10종을 각각 음성으로 알림
-- 여성·남성 음성과 한국어·일본어·영어 조합 60개 WAV
+- 여성·남성 음성과 한국어·일본어·영어·러시아어·중국어 간체 조합 100개 WAV
 - 완전 로컬 재생, 네트워크 통신과 텔레메트리 없음
 - 프롬프트·메시지·도구 입력·출력을 저장하지 않음
 - 비동기 재생 및 중복 재생 방지
@@ -73,12 +73,17 @@ Codex가 npm, Homebrew cask 또는 다른 설치 경로를 확인한 뒤 명시�
 
 - “여성 영어 음성으로 바꿔줘.”
 - “Voice Notify를 남성 일본어로 설정해줘.”
+- “여성 러시아어 음성으로 바꿔줘.”
+- “Voice Notify를 남성 중국어 간체로 설정해줘.”
 - “여성 한국어로 변경해줘.”
 - “음성 알림을 음소거해줘.”
 - “Stop 알림을 테스트해줘.”
 
-지원하는 선택지는 여성·남성과 한국어/한글(`ko`)·일본어(`ja`)·영어(`en`)입니다.
-직접 실행하려면 다음 명령을 사용할 수 있습니다.
+지원하는 선택지는 여성·남성과 한국어/한글(`ko`)·일본어(`ja`)·영어(`en`)·
+러시아어(`ru`)·중국어 간체(`zh-CN`)입니다. 번들된 중국어 변종은
+`zh-CN` 하나이므로 변종을 지정하지 않은 “중국어” 또는 “中文” 요청도
+`zh-CN`(중국어 간체·중국 본토 표준중국어)으로 기본 매핑합니다. 직접
+실행하려면 다음 명령을 사용할 수 있습니다.
 
 macOS:
 
@@ -86,6 +91,8 @@ macOS:
 /bin/sh scripts/voice_notify_config.sh setup --voice female --language ko --open-hooks
 /bin/sh scripts/voice_notify_config.sh set --voice female --language ko
 /bin/sh scripts/voice_notify_config.sh set --voice male --language ja
+/bin/sh scripts/voice_notify_config.sh set --voice female --language ru
+/bin/sh scripts/voice_notify_config.sh set --voice male --language zh-CN
 /bin/sh scripts/voice_notify_config.sh test --event Stop
 /bin/sh scripts/voice_notify_config.sh mute
 ```
@@ -95,6 +102,8 @@ Windows:
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 setup -Voice female -Language ko -OpenHooks
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 set -Voice female -Language ko
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 set -Voice male -Language ru
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 set -Voice female -Language zh-CN
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 test -Event Stop
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 mute
 ```
@@ -116,7 +125,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_con
 
 ## 호환성
 
-버전 0.1.4는 macOS와 Windows를 지원합니다. macOS에서는 Python이나 Xcode
+버전 0.1.5는 macOS와 Windows를 지원합니다. macOS에서는 Python이나 Xcode
 Command Line Tools가 필요하지 않습니다. `/hooks` 안내가 포함된 최초 설정은
 Codex CLI 0.145.0 이상이 필요합니다. Linux는 아직 지원하지 않습니다.
 

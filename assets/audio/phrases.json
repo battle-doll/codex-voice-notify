@@ -3,60 +3,80 @@
     "file": "session-start.wav",
     "ko": "새 코덱스 세션을 시작합니다.",
     "ja": "新しいCodexセッションを開始します。",
-    "en": "Starting a new Codex session."
+    "en": "Starting a new Codex session.",
+    "ru": "Начинаю новую сессию Codex.",
+    "zh-CN": "新的对话已经开始。"
   },
   "UserPromptSubmit": {
     "file": "user-prompt-submit.wav",
     "ko": "요청을 확인했습니다.",
     "ja": "リクエストを確認しました。",
-    "en": "Your request has been received."
+    "en": "Your request has been received.",
+    "ru": "Запрос получен.",
+    "zh-CN": "已收到您的请求。"
   },
   "PreToolUse": {
     "file": "pre-tool-use.wav",
     "ko": "도구를 실행합니다.",
     "ja": "ツールを実行します。",
-    "en": "Running the tool."
+    "en": "Running the tool.",
+    "ru": "Запускаю инструмент.",
+    "zh-CN": "正在运行工具。"
   },
   "PostToolUse": {
     "file": "post-tool-use.wav",
     "ko": "도구 실행이 끝났습니다.",
     "ja": "ツールの実行が終了しました。",
-    "en": "The tool call has ended."
+    "en": "The tool call has ended.",
+    "ru": "Работа инструмента завершена.",
+    "zh-CN": "工具运行完毕。"
   },
   "PermissionRequest": {
     "file": "permission-request.wav",
     "ko": "권한 승인이 필요합니다.",
     "ja": "権限の承認が必要です。",
-    "en": "Permission approval is required."
+    "en": "Permission approval is required.",
+    "ru": "Требуется ваше разрешение.",
+    "zh-CN": "需要您的授权。"
   },
   "PreCompact": {
     "file": "pre-compact.wav",
     "ko": "대화 내용을 정리합니다.",
     "ja": "会話の内容を整理します。",
-    "en": "Compacting the conversation."
+    "en": "Compacting the conversation.",
+    "ru": "Сжимаю контекст диалога.",
+    "zh-CN": "正在压缩对话上下文。"
   },
   "PostCompact": {
     "file": "post-compact.wav",
     "ko": "대화 내용 정리가 끝났습니다.",
     "ja": "会話内容の整理が終了しました。",
-    "en": "Conversation compaction has ended."
+    "en": "Conversation compaction has ended.",
+    "ru": "Сжатие контекста завершено.",
+    "zh-CN": "对话上下文压缩完毕。"
   },
   "SubagentStart": {
     "file": "subagent-start.wav",
     "ko": "서브 에이전트가 작업을 시작합니다.",
     "ja": "サブエージェントが作業を開始します。",
-    "en": "A subagent has started working."
+    "en": "A subagent has started working.",
+    "ru": "Субагент приступил к работе.",
+    "zh-CN": "协作助手开始工作。"
   },
   "SubagentStop": {
     "file": "subagent-stop.wav",
     "ko": "서브 에이전트 작업이 종료되었습니다.",
     "ja": "サブエージェントの作業が終了しました。",
-    "en": "The subagent has stopped working."
+    "en": "The subagent has stopped working.",
+    "ru": "Субагент завершил работу.",
+    "zh-CN": "协作助手结束工作。"
   },
   "Stop": {
     "file": "stop.wav",
     "ko": "코덱스 응답을 마무리합니다.",
     "ja": "Codexの応答を終了します。",
-    "en": "Finishing the Codex response."
+    "en": "Finishing the Codex response.",
+    "ru": "Завершаю ответ Codex.",
+    "zh-CN": "正在完成 Codex 回复。"
   }
 }

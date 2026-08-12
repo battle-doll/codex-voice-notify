@@ -8,6 +8,9 @@ Permission is granted to use, copy, and redistribute the unmodified WAV files
 only as part of an unmodified, free copy of Voice Notify for Codex for personal,
 non-commercial notification playback.
 
+These terms apply equally to the Russian and Simplified Chinese WAV files added
+in version 0.1.5.
+
 This grant does not permit standalone redistribution, modification, commercial
 use, sublicensing under another asset license, voice-model training, speaker
 impersonation, or misleading claims of affiliation.

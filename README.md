@@ -2,7 +2,7 @@
 
 Offline multilingual voice notifications for ten Codex lifecycle events on macOS
 and Windows. Choose a warm husky voice or a deep bright voice in Korean,
-Japanese, or English.
+Japanese, English, Russian, or Simplified Chinese.
 
 This is an independent plugin with MIT-licensed source code and separately
 licensed voice assets. It is not affiliated with or endorsed by OpenAI.
@@ -21,6 +21,9 @@ The plugin plays a local WAV for:
 - `SubagentStart`
 - `SubagentStop`
 - `Stop`
+
+Version 0.1.5 bundles 100 WAV files: ten lifecycle events for each combination
+of two voice profiles and five languages.
 
 It uses `/bin/sh`, `plutil`, `afplay`, and `osascript` already included with
 macOS, or Windows PowerShell and `System.Media.SoundPlayer`. It does not require
@@ -88,13 +91,17 @@ Use natural language at any time. For example:
 
 - "Use the female English voice."
 - "Change Voice Notify to male Japanese."
+- "Use the female Russian voice."
+- "Change Voice Notify to male Simplified Chinese."
 - "여성 한국어 음성으로 바꿔줘."
 - "Mute Voice Notify."
 - "Test the Stop notification."
 
-Codex maps `female` or `male` and Korean/Hangul (`ko`), Japanese (`ja`), or
-English (`en`) to the bundled settings command. You can also run it manually
-from a clone:
+Codex maps `female` or `male` and Korean/Hangul (`ko`), Japanese (`ja`),
+English (`en`), Russian (`ru`), or Simplified Chinese (`zh-CN`) to the bundled
+settings command. Because `zh-CN` is the only bundled Chinese variant, a
+generic "Chinese" or "中文" request defaults to `zh-CN` (Simplified Chinese,
+Mainland Mandarin). You can also run it manually from a clone:
 
 macOS:
 
@@ -103,6 +110,8 @@ macOS:
 /bin/sh scripts/voice_notify_config.sh show
 /bin/sh scripts/voice_notify_config.sh set --voice female --language ko
 /bin/sh scripts/voice_notify_config.sh set --voice male --language en
+/bin/sh scripts/voice_notify_config.sh set --voice female --language ru
+/bin/sh scripts/voice_notify_config.sh set --voice male --language zh-CN
 /bin/sh scripts/voice_notify_config.sh test --event Stop
 /bin/sh scripts/voice_notify_config.sh mute
 ```
@@ -113,6 +122,8 @@ Windows:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 setup -Voice female -Language ko -OpenHooks
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 show
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 set -Voice female -Language ko
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 set -Voice male -Language ru
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 set -Voice female -Language zh-CN
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 test -Event Stop
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 mute
 ```
@@ -134,7 +145,7 @@ actually asks for permission.
 
 ## Compatibility
 
-Version 0.1.4 supports macOS and Windows with system-provided audio and
+Version 0.1.5 supports macOS and Windows with system-provided audio and
 scripting components. macOS does not require Python or Xcode Command Line
 Tools. Guided hook setup requires Codex CLI `0.145.0` or newer. Linux is not yet
 supported.

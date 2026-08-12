@@ -24,6 +24,8 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Package and WAV validation
         run: python scripts/validate_package.py
+      - name: Deterministic release ZIP validation
+        run: python scripts/build_release.py --check-only
       - name: macOS first-time setup smoke test
         if: runner.os == 'macOS'
         shell: bash
@@ -72,13 +74,17 @@ jobs:
             --codex-command "$FAKE_CODEX" \
             --open-hooks \
             --dry-run
-          /bin/sh "$SETTINGS_SCRIPT" test --event Stop --dry-run
-
           export PLUGIN_ROOT
           export PLUGIN_DATA="$RUNNER_TEMP/codex-voice-notify"
           export CODEX_VOICE_NOTIFY_NO_PLAY=1
-          printf '%s' '{"hook_event_name":"Stop","prompt":"PRIVATE_SENTINEL"}' |
-            /bin/sh "$HOOK_SCRIPT"
+          for LOCALE in ru zh-CN; do
+            /bin/sh "$SETTINGS_SCRIPT" set --language "$LOCALE"
+            test "$(/usr/bin/plutil -extract language raw "$CODEX_VOICE_NOTIFY_CONFIG")" = "$LOCALE"
+            /bin/sh "$SETTINGS_SCRIPT" test \
+              --event Stop --language "$LOCALE" --dry-run
+            printf '%s' '{"hook_event_name":"Stop","prompt":"PRIVATE_SENTINEL"}' |
+              /bin/sh "$HOOK_SCRIPT"
+          done
       - name: Windows settings script smoke test
         if: runner.os == 'Windows'
         shell: powershell
@@ -107,15 +113,35 @@ jobs:
           powershell.exe -NoProfile -ExecutionPolicy Bypass `
             -File "$PluginRoot\scripts\voice_notify_config.ps1" `
             setup -Voice female -Language ko -CodexCommand $FakeCodex -OpenHooks -DryRun
-          & "$PluginRoot\scripts\voice_notify_config.ps1" test -Event Stop -DryRun
           $env:PLUGIN_ROOT = (Get-Location).Path
           $env:PLUGIN_DATA = Join-Path $env:RUNNER_TEMP "codex-voice-notify"
           $env:CODEX_VOICE_NOTIFY_NO_PLAY = "1"
           $HookInput = '{"hook_event_name":"Stop","prompt":"PRIVATE_SENTINEL"}'
-          $HookInput |
-            powershell.exe -NoLogo -NoProfile -NonInteractive `
-              -ExecutionPolicy Bypass `
-              -File "$PluginRoot\hooks\play_notify.ps1"
-          if ($LASTEXITCODE -ne 0) {
-            throw "Windows hook smoke test failed with exit code $LASTEXITCODE."
+          $LocaleCases = @(
+            @{ Input = "ru"; Expected = "ru" },
+            @{ Input = "zh-cn"; Expected = "zh-CN" }
+          )
+          foreach ($LocaleCase in $LocaleCases) {
+            & "$PluginRoot\scripts\voice_notify_config.ps1" set `
+              -Language $LocaleCase.Input
+            if ($LASTEXITCODE -ne 0) {
+              throw "Windows set smoke test failed for $($LocaleCase.Input)."
+            }
+            $SavedSettings = `
+              & "$PluginRoot\scripts\voice_notify_config.ps1" show | ConvertFrom-Json
+            if ($SavedSettings.language -cne $LocaleCase.Expected) {
+              throw "Expected canonical locale $($LocaleCase.Expected), got $($SavedSettings.language)."
+            }
+            & "$PluginRoot\scripts\voice_notify_config.ps1" test `
+              -Event Stop -Language $LocaleCase.Input -DryRun
+            if ($LASTEXITCODE -ne 0) {
+              throw "Windows test smoke test failed for $($LocaleCase.Input)."
+            }
+            $HookInput |
+              powershell.exe -NoLogo -NoProfile -NonInteractive `
+                -ExecutionPolicy Bypass `
+                -File "$PluginRoot\hooks\play_notify.ps1"
+            if ($LASTEXITCODE -ne 0) {
+              throw "Windows hook smoke test failed for $($LocaleCase.Input) with exit code $LASTEXITCODE."
+            }
           }

@@ -6,21 +6,20 @@ Status: version update package prepared for submission.
 - Display name: `Voice Notify for Codex`
 - Developer: `battle-doll`
 - Category: `Developer Tools`
-- Version: `0.1.4`
+- Version: `0.1.5`
 - Platforms: macOS and Windows
 - Authentication: none
 - Runtime network access: none
 - Optional setup network access: only an explicitly user-authorized npm or
   Homebrew Codex CLI update
 - Data collection: none
-- Positive tests: 5
+- Positive tests: 7
 - Negative tests: 3
-- Release note: Guided first-time setup now explicitly opens a new terminal
-  window and starts the exact verified Codex CLI there instead of merely
-  displaying a `/hooks` instruction. The user still enters `/hooks`, reviews
-  the bundled command, and grants hook trust personally. macOS and Windows
-  launcher validation was strengthened. Audio assets and notification defaults
-  are unchanged.
+- Release note: Added Russian (`ru`) and Simplified Chinese (`zh-CN`) for both
+  voice profiles across all ten lifecycle events, expanding the release from 60
+  to 100 bundled WAV files. macOS and Windows settings, playback, validation,
+  documentation, and natural-language evaluation coverage now support all five
+  languages. Existing female Korean and event defaults are unchanged.
 - Host update boundary: bundled scripts only inspect the installed Codex
   version. The skill updates a recognized npm or Homebrew installation only
   when the user's setup prompt explicitly requests it.
