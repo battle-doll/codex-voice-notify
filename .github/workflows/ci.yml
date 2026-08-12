@@ -25,7 +25,16 @@ jobs:
       - name: Package and WAV validation
         run: python scripts/validate_package.py
       - name: Deterministic release ZIP validation
-        run: python scripts/build_release.py --check-only
+        run: >-
+          python scripts/build_release.py --check-only
+          --sha256-output "${{ runner.temp }}/release-sha256.txt"
+      - name: Upload deterministic release digest
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-digest-${{ matrix.os }}
+          path: ${{ runner.temp }}/release-sha256.txt
+          if-no-files-found: error
+          retention-days: 1
       - name: macOS first-time setup smoke test
         if: runner.os == 'macOS'
         shell: bash
@@ -145,3 +154,27 @@ jobs:
               throw "Windows hook smoke test failed for $($LocaleCase.Input) with exit code $LASTEXITCODE."
             }
           }
+
+  compare-release-digests:
+    name: compare release digests
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: release-digest-*
+          path: release-digests
+      - name: Require identical macOS and Windows ZIP digests
+        shell: bash
+        run: |
+          set -euo pipefail
+          MACOS_DIGEST="$(tr -d '\r\n' < release-digests/release-digest-macos-latest/release-sha256.txt)"
+          WINDOWS_DIGEST="$(tr -d '\r\n' < release-digests/release-digest-windows-latest/release-sha256.txt)"
+          [[ "$MACOS_DIGEST" =~ ^[0-9a-f]{64}$ ]]
+          [[ "$WINDOWS_DIGEST" =~ ^[0-9a-f]{64}$ ]]
+          if [[ "$MACOS_DIGEST" != "$WINDOWS_DIGEST" ]]; then
+            echo "macOS ZIP SHA-256: $MACOS_DIGEST" >&2
+            echo "Windows ZIP SHA-256: $WINDOWS_DIGEST" >&2
+            exit 1
+          fi
+          echo "Cross-platform ZIP SHA-256: $MACOS_DIGEST"
