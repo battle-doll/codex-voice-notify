@@ -177,7 +177,7 @@ if [ -f "$config_path" ]; then
             /usr/bin/plutil -extract language raw -- "$config_path" 2>/dev/null
         )
         case "$configured" in
-            ko|ja|en) language=$configured ;;
+            ko|ja|en|ru|zh-CN) language=$configured ;;
         esac
         configured=$(
             /usr/bin/plutil -extract min_interval_ms raw -- "$config_path" 2>/dev/null

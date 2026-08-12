@@ -19,8 +19,62 @@ $EventFiles = @{
     Stop              = "stop"
 }
 
+function ConvertTo-CanonicalLanguage($Value) {
+    if ($Value -isnot [string]) {
+        return $null
+    }
+    switch ($Value) {
+        "ko" { return "ko" }
+        "ja" { return "ja" }
+        "en" { return "en" }
+        "ru" { return "ru" }
+        "zh-CN" { return "zh-CN" }
+        default { return $null }
+    }
+}
+
 function ConvertFrom-Base64Utf8([string]$Value) {
     return [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($Value))
+}
+
+function Read-BoundedStandardInput([int]$MaxBytes) {
+    if ($MaxBytes -lt 1) {
+        return $null
+    }
+
+    $InputStream = [Console]::OpenStandardInput()
+    $Buffer = New-Object byte[] 8192
+    $Captured = New-Object IO.MemoryStream
+    try {
+        while ($true) {
+            # Read at most one byte beyond the limit so oversized producers do
+            # not make this process wait for EOF or allocate their full input.
+            $Remaining = ([long]$MaxBytes + 1L) - $Captured.Length
+            if ($Remaining -le 0) {
+                return $null
+            }
+            $ReadLength = [int][Math]::Min([long]$Buffer.Length, $Remaining)
+            $ReadCount = $InputStream.Read($Buffer, 0, $ReadLength)
+            if ($ReadCount -eq 0) {
+                break
+            }
+            $Captured.Write($Buffer, 0, $ReadCount)
+            if ($Captured.Length -gt $MaxBytes) {
+                return $null
+            }
+        }
+
+        try {
+            $StrictUtf8 = [Text.UTF8Encoding]::new($false, $true)
+            return $StrictUtf8.GetString($Captured.ToArray())
+        }
+        catch {
+            return $null
+        }
+    }
+    finally {
+        $Captured.Dispose()
+    }
 }
 
 if ($Worker) {
@@ -67,8 +121,8 @@ if ($Worker) {
     exit 0
 }
 
-$RawInput = [Console]::In.ReadToEnd()
-if ($RawInput.Length -gt 1048576) {
+$RawInput = Read-BoundedStandardInput 1048576
+if ($null -eq $RawInput) {
     exit 0
 }
 try {
@@ -103,8 +157,9 @@ if ((Test-Path -LiteralPath $ConfigPath -PathType Leaf) -and
         if (@("female", "male") -contains $Settings.voice) {
             $Voice = [string]$Settings.voice
         }
-        if (@("ko", "ja", "en") -contains $Settings.language) {
-            $Language = [string]$Settings.language
+        $CanonicalLanguage = ConvertTo-CanonicalLanguage $Settings.language
+        if ($null -ne $CanonicalLanguage) {
+            $Language = $CanonicalLanguage
         }
         if ($Settings.min_interval_ms -is [int] -or $Settings.min_interval_ms -is [long]) {
             $MinimumInterval = [Math]::Max(0, [Math]::Min(10000, [int]$Settings.min_interval_ms))

@@ -4,7 +4,7 @@ param(
     [string]$Command = "show",
     [ValidateSet("female", "male")]
     [string]$Voice,
-    [ValidateSet("ko", "ja", "en")]
+    [ValidateSet("ko", "ja", "en", "ru", "zh-CN")]
     [string]$Language,
     [ValidateSet(
         "SessionStart",
@@ -52,6 +52,20 @@ $EventFiles = @{
     Stop              = "stop"
 }
 
+function ConvertTo-CanonicalLanguage($Value) {
+    if ($Value -isnot [string]) {
+        return $null
+    }
+    switch ($Value) {
+        "ko" { return "ko" }
+        "ja" { return "ja" }
+        "en" { return "en" }
+        "ru" { return "ru" }
+        "zh-CN" { return "zh-CN" }
+        default { return $null }
+    }
+}
+
 function New-DefaultSettings {
     $Events = [ordered]@{}
     foreach ($Name in $EventFiles.Keys) {
@@ -79,8 +93,9 @@ function Get-Settings {
         if (@("female", "male") -contains $Candidate.voice) {
             $Result.voice = [string]$Candidate.voice
         }
-        if (@("ko", "ja", "en") -contains $Candidate.language) {
-            $Result.language = [string]$Candidate.language
+        $CanonicalLanguage = ConvertTo-CanonicalLanguage $Candidate.language
+        if ($null -ne $CanonicalLanguage) {
+            $Result.language = $CanonicalLanguage
         }
         if ($Candidate.min_interval_ms -is [int] -or $Candidate.min_interval_ms -is [long]) {
             $Result.min_interval_ms = [Math]::Max(
@@ -187,6 +202,9 @@ Write-Host ""
 }
 
 $Settings = Get-Settings
+if ($Language) {
+    $Language = ConvertTo-CanonicalLanguage $Language
+}
 switch ($Command) {
     "show" {
         $Settings | ConvertTo-Json -Depth 5

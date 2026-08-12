@@ -4,6 +4,8 @@ import importlib.util
 import json
 import os
 import pathlib
+import shutil
+import subprocess
 import tempfile
 import types
 import unittest
@@ -45,6 +47,89 @@ class VoiceNotifyTests(unittest.TestCase):
         self.assertEqual(settings["voice"], "female")
         self.assertEqual(settings["language"], "ko")
         self.assertEqual(settings["min_interval_ms"], 10000)
+
+    def test_russian_and_simplified_chinese_are_allowed(self) -> None:
+        self.assertEqual(
+            play_notify.normalize_settings({"language": "ru"})["language"],
+            "ru",
+        )
+        self.assertEqual(
+            play_notify.normalize_settings({"language": "zh-CN"})["language"],
+            "zh-CN",
+        )
+        parser = voice_notify_config.build_parser()
+        self.assertEqual(parser.parse_args(["set", "--language", "ru"]).language, "ru")
+        self.assertEqual(
+            parser.parse_args(["setup", "--language", "zh-CN"]).language,
+            "zh-CN",
+        )
+
+    def test_powershell_canonicalizes_chinese_locale_casing(self) -> None:
+        settings_script = (ROOT / "scripts" / "voice_notify_config.ps1").read_text(
+            encoding="utf-8"
+        )
+        hook_script = (ROOT / "hooks" / "play_notify.ps1").read_text(
+            encoding="utf-8"
+        )
+        for script in (settings_script, hook_script):
+            self.assertIn("function ConvertTo-CanonicalLanguage", script)
+            self.assertIn('"zh-CN" { return "zh-CN" }', script)
+            self.assertIn("$CanonicalLanguage = ConvertTo-CanonicalLanguage", script)
+        self.assertIn(
+            "$Language = ConvertTo-CanonicalLanguage $Language",
+            settings_script,
+        )
+
+    def test_powershell_hook_reads_stdin_with_a_byte_bound(self) -> None:
+        hook_script = (ROOT / "hooks" / "play_notify.ps1").read_text(
+            encoding="utf-8"
+        )
+        self.assertNotIn("[Console]::In.ReadToEnd()", hook_script)
+        self.assertIn("function Read-BoundedStandardInput", hook_script)
+        self.assertIn("[Console]::OpenStandardInput()", hook_script)
+        self.assertIn("Read-BoundedStandardInput 1048576", hook_script)
+        self.assertIn("([long]$MaxBytes + 1L)", hook_script)
+        self.assertIn("[Text.UTF8Encoding]::new($false, $true)", hook_script)
+
+    def test_powershell_hook_rejects_oversize_input_without_waiting_for_eof(self) -> None:
+        powershell = shutil.which("powershell.exe") or shutil.which("pwsh")
+        if powershell is None:
+            self.skipTest("PowerShell is unavailable on this platform")
+
+        command = [
+            powershell,
+            "-NoLogo",
+            "-NoProfile",
+            "-NonInteractive",
+        ]
+        if pathlib.Path(powershell).name.lower() == "powershell.exe":
+            command.extend(["-ExecutionPolicy", "Bypass"])
+        command.extend(["-File", str(ROOT / "hooks" / "play_notify.ps1")])
+        process = subprocess.Popen(
+            command,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env={**os.environ, "PLUGIN_ROOT": str(ROOT)},
+        )
+        assert process.stdin is not None
+        try:
+            try:
+                process.stdin.write(b"x" * (1048576 + 1))
+                process.stdin.flush()
+            except BrokenPipeError:
+                # Early pipe closure is also a valid fail-closed rejection.
+                pass
+            return_code = process.wait(timeout=20)
+            self.assertEqual(return_code, 0)
+        finally:
+            try:
+                process.stdin.close()
+            except BrokenPipeError:
+                pass
+            if process.poll() is None:
+                process.kill()
+                process.wait()
 
     def test_malformed_config_falls_back_without_error(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
