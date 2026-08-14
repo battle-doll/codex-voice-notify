@@ -1,6 +1,6 @@
 {
   "name": "codex-voice-notify",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "license": "MIT",
   "description": "Offline multilingual voice notifications for Codex lifecycle events on macOS and Windows.",
   "author": {

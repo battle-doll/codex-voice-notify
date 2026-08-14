@@ -6,7 +6,7 @@ Status: version update package prepared for submission.
 - Display name: `Voice Notify for Codex`
 - Developer: `battle-doll`
 - Category: `Developer Tools`
-- Version: `0.1.5`
+- Version: `0.1.6`
 - Platforms: macOS and Windows
 - Authentication: none
 - Runtime network access: none
@@ -15,11 +15,12 @@ Status: version update package prepared for submission.
 - Data collection: none
 - Positive tests: 7
 - Negative tests: 3
-- Release note: Added Russian (`ru`) and Simplified Chinese (`zh-CN`) for both
-  voice profiles across all ten lifecycle events, expanding the release from 60
-  to 100 bundled WAV files. macOS and Windows settings, playback, validation,
-  documentation, and natural-language evaluation coverage now support all five
-  languages. Existing female Korean and event defaults are unchanged.
+- Release note: Added complete English, Korean, Japanese, Simplified Chinese,
+  and Russian READMEs with a shared language switcher and parity across setup,
+  configuration, troubleshooting, compatibility, privacy, and licensing
+  guidance. All five READMEs are included and validated in the deterministic
+  package. The 100 WAV assets, runtime behavior, and defaults are unchanged from
+  0.1.5.
 - Host update boundary: bundled scripts only inspect the installed Codex
   version. The skill updates a recognized npm or Homebrew installation only
   when the user's setup prompt explicitly requests it.
