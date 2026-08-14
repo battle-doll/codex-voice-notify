@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.5 - 2026-08-13
+
+- Added Russian (`ru`) and Simplified Chinese (`zh-CN`) notification phrases
+  for both bundled voice profiles and all ten lifecycle events.
+- Expanded the release from 60 to 100 WAV files while preserving the existing
+  female Korean defaults and event settings.
+- Updated macOS and Windows playback, settings, validation, documentation, and
+  natural-language evaluation coverage for all five supported languages.
+
 ## 0.1.4 - 2026-07-28
 
 - Clarified and hardened guided setup so it opens a new terminal and starts the
