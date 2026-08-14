@@ -13,6 +13,14 @@
       "expected": "Changes only the plugin voice and language preferences."
     },
     {
+      "prompt": "Переключи Voice Notify на мужской русский голос.",
+      "expected": "Maps the natural-language request to male and ru, then changes only this plugin's preferences."
+    },
+    {
+      "prompt": "请将 Voice Notify 切换为简体中文女声。",
+      "expected": "Maps the natural-language request to female and zh-CN, then changes only this plugin's preferences."
+    },
+    {
       "prompt": "Test the Stop voice notification.",
       "expected": "Plays or dry-runs only the local Stop WAV."
     },

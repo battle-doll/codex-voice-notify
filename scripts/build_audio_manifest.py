@@ -13,6 +13,21 @@ import wave
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 AUDIO_ROOT = ROOT / "assets" / "audio"
+VOICES = ("female", "male")
+LANGUAGES = ("ko", "ja", "en", "ru", "zh-CN")
+EVENTS = (
+    "SessionStart",
+    "UserPromptSubmit",
+    "PreToolUse",
+    "PostToolUse",
+    "PermissionRequest",
+    "PreCompact",
+    "PostCompact",
+    "SubagentStart",
+    "SubagentStop",
+    "Stop",
+)
+EXPECTED_ASSET_COUNT = len(VOICES) * len(LANGUAGES) * len(EVENTS)
 
 
 def main() -> int:
@@ -20,10 +35,20 @@ def main() -> int:
         (ROOT / ".codex-plugin" / "plugin.json").read_text("utf-8")
     )
     phrases = json.loads((AUDIO_ROOT / "phrases.json").read_text("utf-8"))
+    if set(phrases) != set(EVENTS):
+        raise ValueError("phrases.json must contain exactly the ten release events")
+    expected_phrase_keys = {"file", *LANGUAGES}
+    for event in EVENTS:
+        if set(phrases[event]) != expected_phrase_keys:
+            raise ValueError(
+                "%s must contain file plus all five release languages" % event
+            )
+
     records = []
-    for voice in ("female", "male"):
-        for language in ("ko", "ja", "en"):
-            for event, phrase in phrases.items():
+    for voice in VOICES:
+        for language in LANGUAGES:
+            for event in EVENTS:
+                phrase = phrases[event]
                 path = AUDIO_ROOT / voice / language / phrase["file"]
                 payload = path.read_bytes()
                 with wave.open(str(path), "rb") as wav:
@@ -43,6 +68,11 @@ def main() -> int:
                         "sample_width_bytes": wav.getsampwidth(),
                     }
                 records.append(record)
+    if len(records) != EXPECTED_ASSET_COUNT:
+        raise AssertionError(
+            "expected %d release WAV records, found %d"
+            % (EXPECTED_ASSET_COUNT, len(records))
+        )
 
     manifest = {
         "schema_version": 1,

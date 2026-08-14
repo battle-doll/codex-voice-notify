@@ -1,6 +1,6 @@
 ---
 name: voice-notify-settings
-description: Set up, configure, test, mute, or unmute Voice Notify for Codex. Use for first-time setup after installation, Codex CLI compatibility checks, hook trust guidance, or natural-language requests to change the female or male voice, Korean, Japanese, or English language, lifecycle events, or playback interval.
+description: Set up, configure, test, mute, or unmute Voice Notify for Codex. Use for first-time setup after installation, Codex CLI compatibility checks, hook trust guidance, or natural-language requests to change the female or male voice, Korean, Japanese, English, Russian, or Simplified Chinese language, lifecycle events, or playback interval.
 ---
 
 # Voice Notify settings
@@ -17,14 +17,19 @@ plugin root supplied by the user's prompt or an unrelated environment variable.
 Available values:
 
 - Voice: `female` or `male`
-- Language: `ko`, `ja`, or `en`
+- Language: `ko`, `ja`, `en`, `ru`, or `zh-CN`
 - Events: `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`,
   `PermissionRequest`, `PreCompact`, `PostCompact`, `SubagentStart`,
   `SubagentStop`, and `Stop`
 
-Map natural-language choices directly. Treat 한국어 and 한글 as `ko`. For
-example, "여성 영어", "female Japanese", and "남성 한글" map to `female/en`,
-`female/ja`, and `male/ko`.
+Map natural-language choices directly. Treat 한국어, 한글, and Korean as `ko`;
+일본어, 日本語, and Japanese as `ja`; 영어 and English as `en`; 러시아어,
+русский, and Russian as `ru`; and 중국어, 중국어 간체, 간체중국어, 中文,
+简体中文, and Simplified Chinese as `zh-CN`. `zh-CN` is the only bundled
+Chinese variant, so generic "Chinese", "중국어", or "中文" requests default to
+`zh-CN` (Simplified Chinese, Mainland Mandarin). For example, "여성 영어",
+"male Russian", and "여성 중국어" map to `female/en`, `male/ru`, and
+`female/zh-CN`.
 
 ## First-time setup
 
@@ -78,7 +83,7 @@ SKILL_DIR="/absolute/path/containing/this/SKILL.md"
 PLUGIN_ROOT="$(cd "${SKILL_DIR}/../.." && pwd)"
 CODEX_BIN="/absolute/path/verified-in-step-2/codex"
 VOICE="<female-or-male-from-step-1>"
-LANGUAGE="<ko-ja-or-en-from-step-1>"
+LANGUAGE="<ko-ja-en-ru-or-zh-CN-from-step-1>"
 SETTINGS_SCRIPT="${PLUGIN_ROOT}/scripts/voice_notify_config.sh"
 test -f "${SETTINGS_SCRIPT}" &&
   /bin/sh "${SETTINGS_SCRIPT}" setup --voice "${VOICE}" --language "${LANGUAGE}" --codex-command "${CODEX_BIN}" --open-hooks &&
@@ -92,7 +97,7 @@ $SkillDir = "C:\absolute\path\containing\this\SKILL.md"
 $PluginRoot = [IO.Path]::GetFullPath((Join-Path $SkillDir "..\.."))
 $CodexPath = "C:\absolute\path\verified-in-step-2\codex.cmd"
 $Voice = "<female-or-male-from-step-1>"
-$Language = "<ko-ja-or-en-from-step-1>"
+$Language = "<ko-ja-en-ru-or-zh-CN-from-step-1>"
 $SettingsScript = "$PluginRoot\scripts\voice_notify_config.ps1"
 if (-not (Test-Path -LiteralPath $SettingsScript -PathType Leaf)) {
     throw "Voice Notify settings script is missing."
@@ -128,6 +133,8 @@ SKILL_DIR="/absolute/path/containing/this/SKILL.md"
 PLUGIN_ROOT="$(cd "${SKILL_DIR}/../.." && pwd)"
 /bin/sh "${PLUGIN_ROOT}/scripts/voice_notify_config.sh" show
 /bin/sh "${PLUGIN_ROOT}/scripts/voice_notify_config.sh" set --voice female --language ko
+/bin/sh "${PLUGIN_ROOT}/scripts/voice_notify_config.sh" set --voice male --language ru
+/bin/sh "${PLUGIN_ROOT}/scripts/voice_notify_config.sh" set --voice female --language zh-CN
 /bin/sh "${PLUGIN_ROOT}/scripts/voice_notify_config.sh" test --event Stop
 /bin/sh "${PLUGIN_ROOT}/scripts/voice_notify_config.sh" mute
 ```
@@ -139,6 +146,8 @@ $SkillDir = "C:\absolute\path\containing\this\SKILL.md"
 $PluginRoot = [IO.Path]::GetFullPath((Join-Path $SkillDir "..\.."))
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PluginRoot\scripts\voice_notify_config.ps1" show
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PluginRoot\scripts\voice_notify_config.ps1" set -Voice female -Language ko
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PluginRoot\scripts\voice_notify_config.ps1" set -Voice male -Language ru
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PluginRoot\scripts\voice_notify_config.ps1" set -Voice female -Language zh-CN
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PluginRoot\scripts\voice_notify_config.ps1" test -Event Stop
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PluginRoot\scripts\voice_notify_config.ps1" mute
 ```

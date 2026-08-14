@@ -25,7 +25,7 @@ valid_voice() {
 }
 
 valid_language() {
-    case "$1" in ko|ja|en) return 0 ;; *) return 1 ;; esac
+    case "$1" in ko|ja|en|ru|zh-CN) return 0 ;; *) return 1 ;; esac
 }
 
 event_slug() {
@@ -93,7 +93,7 @@ load_settings() {
     configured_value=$(plist_raw voice) || configured_value=""
     case "$configured_value" in female|male) voice=$configured_value ;; esac
     configured_value=$(plist_raw language) || configured_value=""
-    case "$configured_value" in ko|ja|en) language=$configured_value ;; esac
+    case "$configured_value" in ko|ja|en|ru|zh-CN) language=$configured_value ;; esac
     configured_value=$(plist_raw min_interval_ms) || configured_value=""
     case "$configured_value" in
         ''|*[!0-9]*) ;;
@@ -182,7 +182,8 @@ apply_choices() {
         voice=$voice_choice
     fi
     if [ -n "$language_choice" ]; then
-        valid_language "$language_choice" || usage_error "Language must be ko, ja, or en."
+        valid_language "$language_choice" ||
+            usage_error "Language must be ko, ja, en, ru, or zh-CN."
         language=$language_choice
     fi
     if [ -n "$interval_choice" ]; then

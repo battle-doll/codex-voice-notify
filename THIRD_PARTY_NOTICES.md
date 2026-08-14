@@ -29,6 +29,23 @@ license as Apache-2.0:
 - https://huggingface.co/mlx-community/Qwen3-TTS-12Hz-0.6B-Base-bf16
 - https://huggingface.co/mlx-community/Qwen3-TTS-12Hz-1.7B-VoiceDesign-bf16
 
+## Version 0.1.5 Russian and Simplified Chinese expansion
+
+The 40 Russian (`ru`) and Simplified Chinese (`zh-CN`) WAV files added in
+version 0.1.5 were generated with
+`mlx-community/Qwen3-TTS-12Hz-0.6B-Base-bf16`, pinned to revision
+`1eccf1cb2519b5a4e8a95b5f0544f3303568164f`. The female files used the
+approved local `female-warm-husky-v1` reference, and the male files used the
+approved local `male-deep-bright-v1` reference. Russian generation used the
+paired reference transcript. Simplified Chinese generation used Qwen Base's
+speaker-embedding-only path (`ref_text=None`) to preserve each approved voice
+without pairing a Korean reference recording with Chinese text. The female reference is
+original synthetic material created for this project with Qwen VoiceDesign.
+The male reference was normalized from this project's existing Fish S2
+Pro-generated Korean `session-start.wav` notification described below.
+Reference recordings are not included in the plugin, and the asset license's
+non-commercial boundary continues to apply to the expanded set.
+
 ## Male notification set
 
 The original male set was generated with Fish S2 Pro, using model revision

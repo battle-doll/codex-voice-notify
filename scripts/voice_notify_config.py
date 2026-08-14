@@ -22,6 +22,7 @@ import play_notify  # noqa: E402
 
 
 MIN_HOOKS_CODEX_VERSION = (0, 145, 0)
+LANGUAGE_CHOICES = tuple(sorted(play_notify.LANGUAGES))
 CODEX_VERSION_PATTERN = re.compile(
     r"(?i)^\s*(?:openai\s+)?codex(?:-cli)?\s+"
     r"(?:\(\s*)?v?(\d+)\.(\d+)\.(\d+)\s*\)?\s*$"
@@ -142,7 +143,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     set_parser = subparsers.add_parser("set", help="Change voice, language, or events")
     set_parser.add_argument("--voice", choices=sorted(play_notify.VOICES))
-    set_parser.add_argument("--language", choices=sorted(play_notify.LANGUAGES))
+    set_parser.add_argument("--language", choices=LANGUAGE_CHOICES)
     set_parser.add_argument("--min-interval-ms", type=int)
     set_parser.add_argument(
         "--enable-event", action="append", choices=sorted(play_notify.EVENT_FILES)
@@ -154,14 +155,14 @@ def build_parser() -> argparse.ArgumentParser:
     test_parser = subparsers.add_parser("test", help="Play one notification")
     test_parser.add_argument("--event", choices=sorted(play_notify.EVENT_FILES), default="Stop")
     test_parser.add_argument("--voice", choices=sorted(play_notify.VOICES))
-    test_parser.add_argument("--language", choices=sorted(play_notify.LANGUAGES))
+    test_parser.add_argument("--language", choices=LANGUAGE_CHOICES)
     test_parser.add_argument("--dry-run", action="store_true")
 
     setup_parser = subparsers.add_parser(
         "setup", help="Run guided first-time setup"
     )
     setup_parser.add_argument("--voice", choices=sorted(play_notify.VOICES))
-    setup_parser.add_argument("--language", choices=sorted(play_notify.LANGUAGES))
+    setup_parser.add_argument("--language", choices=LANGUAGE_CHOICES)
     setup_parser.add_argument("--skip-audio-test", action="store_true")
     setup_parser.add_argument("--open-hooks", action="store_true")
     setup_parser.add_argument("--codex-command")

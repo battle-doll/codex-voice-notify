@@ -31,7 +31,7 @@ EVENT_FILES = {
     "Stop": "stop",
 }
 VOICES = frozenset(("female", "male"))
-LANGUAGES = frozenset(("ko", "ja", "en"))
+LANGUAGES = frozenset(("ko", "ja", "en", "ru", "zh-CN"))
 DEFAULT_DISABLED_EVENTS = frozenset(("PreToolUse", "PostToolUse"))
 DEFAULT_SETTINGS = {
     "enabled": True,
