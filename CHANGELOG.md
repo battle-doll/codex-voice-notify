@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.6 - 2026-08-15
+
+- Added complete Japanese, Simplified Chinese, and Russian READMEs and refreshed
+  the English and Korean READMEs to the same seven-section product contract.
+- Added one identical five-language switcher to every README and kept setup,
+  hook trust, privacy, compatibility, and licensing guidance in parity.
+- Included all five localized READMEs in the deterministic release artifact and
+  added package validation for language links, version anchors, commands, and
+  required product boundaries.
+- Kept the 100 WAV assets, five spoken languages, runtime behavior, and default
+  settings unchanged from 0.1.5.
+
 ## 0.1.5 - 2026-08-13
 
 - Added Russian (`ru`) and Simplified Chinese (`zh-CN`) notification phrases
