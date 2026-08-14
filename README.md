@@ -1,5 +1,7 @@
 # Voice Notify for Codex
 
+[English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-CN.md) | [Русский](README.ru.md)
+
 Offline multilingual voice notifications for ten Codex lifecycle events on macOS
 and Windows. Choose a warm husky voice or a deep bright voice in Korean,
 Japanese, English, Russian, or Simplified Chinese.
@@ -22,8 +24,10 @@ The plugin plays a local WAV for:
 - `SubagentStop`
 - `Stop`
 
-Version 0.1.5 bundles 100 WAV files: ten lifecycle events for each combination
-of two voice profiles and five languages.
+Version 0.1.6 bundles 100 WAV files: ten lifecycle events for each combination
+of two voice profiles and five languages. This patch adds complete English,
+Korean, Japanese, Simplified Chinese, and Russian README coverage; audio assets
+and runtime behavior are unchanged from 0.1.5.
 
 It uses `/bin/sh`, `plutil`, `afplay`, and `osascript` already included with
 macOS, or Windows PowerShell and `System.Media.SoundPlayer`. It does not require
@@ -145,16 +149,20 @@ actually asks for permission.
 
 ## Compatibility
 
-Version 0.1.5 supports macOS and Windows with system-provided audio and
+Version 0.1.6 supports macOS and Windows with system-provided audio and
 scripting components. macOS does not require Python or Xcode Command Line
 Tools. Guided hook setup requires Codex CLI `0.145.0` or newer. Linux is not yet
 supported.
 
 ## Licensing
 
-Source code is MIT licensed. WAV files under `assets/audio/` are excluded from
-the MIT license and use the separate terms in [ASSET_LICENSE.md](ASSET_LICENSE.md).
-See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for generation provenance.
-Most of the male notification set was built with Fish Audio and is subject to
-the non-commercial asset boundary described there. Two Korean subagent files
-were regenerated with Qwen Base to match the current wording.
+Source code is MIT licensed. All WAV files under `assets/audio/` are excluded
+from the MIT license. Under the limited grant in
+[ASSET_LICENSE.md](ASSET_LICENSE.md), they may be used, copied, and redistributed
+only without modification, only as part of an unmodified, free copy of Voice
+Notify for Codex, and only for personal, non-commercial notification playback.
+
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) records generation provenance
+only. Most of the male notification set was built with Fish Audio, and two
+Korean subagent files were regenerated with Qwen Base to match the current
+wording. These provenance details do not change the voice-asset terms.

@@ -84,6 +84,139 @@ EXPECTED_AUDIO_RECORD_KEYS = frozenset({
 })
 EXPECTED_EVAL_KEYS = frozenset(("positive", "negative"))
 EXPECTED_EVAL_CASE_KEYS = frozenset(("prompt", "expected"))
+EXPECTED_README_FILES = (
+    "README.md",
+    "README.ko.md",
+    "README.ja.md",
+    "README.zh-CN.md",
+    "README.ru.md",
+)
+README_LANGUAGE_SWITCHER = (
+    "[English](README.md) | [한국어](README.ko.md) | "
+    "[日本語](README.ja.md) | [简体中文](README.zh-CN.md) | "
+    "[Русский](README.ru.md)"
+)
+README_VERSION_PREFIXES = {
+    "README.md": "Version ",
+    "README.ko.md": "버전 ",
+    "README.ja.md": "バージョン ",
+    "README.zh-CN.md": "版本 ",
+    "README.ru.md": "Версия ",
+}
+README_ASSET_SCOPE_MARKERS = {
+    "README.md": (
+        "All WAV files under `assets/audio/`",
+        "only without modification",
+        "personal, non-commercial notification playback",
+        "records generation provenance",
+        "provenance details do not change",
+    ),
+    "README.ko.md": (
+        "`assets/audio/` 아래의 모든 WAV",
+        "수정하지 않은 무료 Voice",
+        "개인적·비상업적 알림 재생 용도로만",
+        "생성 출처만 기록합니다",
+        "사용 조건을 변경하지 않습니다",
+    ),
+    "README.ja.md": (
+        "`assets/audio/` 以下のすべての WAV",
+        "未改変かつ無償の Voice Notify for Codex",
+        "個人的・非商用の通知再生目的でのみ",
+        "生成来歴のみを記録します",
+        "利用条件が変わることはありません",
+    ),
+    "README.zh-CN.md": (
+        "`assets/audio/` 下的所有 WAV",
+        "未经修改的免费 Voice Notify for Codex",
+        "个人、非商业通知播放",
+        "仅记录生成来源",
+        "不会改变语音资源的使用条款",
+    ),
+    "README.ru.md": (
+        "Все WAV-файлы в `assets/audio/`",
+        "неизменённой бесплатной",
+        "личного некоммерческого воспроизведения",
+        "содержит только сведения о",
+        "не изменяют условия использования голосовых ресурсов",
+    ),
+}
+README_PRIVACY_MARKERS = {
+    "README.md": (
+        "no network code or telemetry",
+        "never stores prompts, messages, tool input, or tool output",
+    ),
+    "README.ko.md": (
+        "네트워크 코드와 텔레메트리가",
+        "프롬프트·메시지·도구 입력·도구 출력을 저장하지 않습니다",
+    ),
+    "README.ja.md": (
+        "ネットワークコードや",
+        "テレメトリはなく",
+        "ツール入力、ツール出力を保存しません",
+    ),
+    "README.zh-CN.md": (
+        "不包含网络代码或遥测",
+        "不会存储提示词、消息",
+        "工具输入或工具输出",
+    ),
+    "README.ru.md": (
+        "нет сетевого кода и телеметрии",
+        "не сохраняет запросы, сообщения",
+        "входные или выходные данные инструментов",
+    ),
+}
+README_HOOK_TRUST_MARKERS = {
+    "README.md": (
+        "enter `/hooks`, inspect the bundled",
+        "explicitly trust it",
+        "fully restart Codex before testing",
+    ),
+    "README.ko.md": (
+        "`/hooks`를 입력하고 번들 명령을 검토",
+        "신뢰하십시오",
+        "Codex를 완전히 종료하고 다시 실행",
+    ),
+    "README.ja.md": (
+        "`/hooks` と入力し、同梱コマンドを確認",
+        "明示的に信頼してください",
+        "Codex を完全に終了して再起動",
+    ),
+    "README.zh-CN.md": (
+        "输入 `/hooks`，检查插件自带的命令",
+        "明确选择信任",
+        "彻底退出并重新启动 Codex",
+    ),
+    "README.ru.md": (
+        "введите `/hooks`, проверьте встроенную команду",
+        "явно подтвердите доверие",
+        "полностью закройте и заново запустите",
+    ),
+}
+COMMON_README_MARKERS = (
+    "100 WAV",
+    "`SessionStart`",
+    "`PreToolUse`",
+    "`PostToolUse`",
+    "`PermissionRequest`",
+    "`/hooks`",
+    "`0.145.0`",
+    "[ASSET_LICENSE.md](ASSET_LICENSE.md)",
+    "[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)",
+    "codex plugin marketplace add battle-doll/codex-voice-notify --ref main",
+    "codex plugin add codex-voice-notify@codex-voice-notify",
+    "codex.cmd plugin marketplace add battle-doll/codex-voice-notify --ref main",
+    "codex.cmd plugin add codex-voice-notify@codex-voice-notify",
+    "voice_notify_config.sh setup",
+    "voice_notify_config.sh show",
+    "voice_notify_config.sh set",
+    "voice_notify_config.sh test",
+    "voice_notify_config.sh mute",
+    "voice_notify_config.ps1 setup",
+    "voice_notify_config.ps1 show",
+    "voice_notify_config.ps1 set",
+    "voice_notify_config.ps1 test",
+    "voice_notify_config.ps1 mute",
+)
 EVAL_LOCALE_MARKERS = {
     "ko": ("korean", "한국어", "한국"),
     "ja": ("japanese", "日本語", "일본어"),
@@ -182,6 +315,52 @@ def require_plugin_directory(raw_path: object, expected: str, label: str) -> Non
         or (ROOT / relative_text).is_symlink()
     ):
         fail("%s must resolve to a real directory inside the plugin root" % label)
+
+
+def validate_multilingual_readmes(version: str) -> None:
+    """Require structurally complete, release-matched localized READMEs."""
+
+    for filename in EXPECTED_README_FILES:
+        path = ROOT / filename
+        if not path.is_file() or path.stat().st_size == 0:
+            fail("missing multilingual README: %s" % filename)
+        text = path.read_text("utf-8")
+        lines = text.splitlines()
+        if len(lines) < 3 or lines[2] != README_LANGUAGE_SWITCHER:
+            fail("README language switcher mismatch: %s" % filename)
+        version_marker = README_VERSION_PREFIXES[filename] + version
+        if text.count(version_marker) != 2:
+            fail("README must contain both current-version anchors: %s" % filename)
+        if text.count("\n## ") != 7:
+            fail("README must contain the seven release sections: %s" % filename)
+        if text.count("```") != 8:
+            fail("README must contain four complete command blocks: %s" % filename)
+        missing_markers = [
+            marker for marker in COMMON_README_MARKERS if marker not in text
+        ]
+        if missing_markers:
+            fail(
+                "README is missing release-parity markers (%s): %s"
+                % (", ".join(missing_markers), filename)
+            )
+        localized_boundaries = (
+            ("complete voice-asset scope", README_ASSET_SCOPE_MARKERS[filename]),
+            ("offline privacy boundary", README_PRIVACY_MARKERS[filename]),
+            ("manual hook trust boundary", README_HOOK_TRUST_MARKERS[filename]),
+        )
+        for boundary_name, boundary_markers in localized_boundaries:
+            missing_boundary_markers = [
+                marker for marker in boundary_markers if marker not in text
+            ]
+            if missing_boundary_markers:
+                fail(
+                    "README is missing %s (%s): %s"
+                    % (
+                        boundary_name,
+                        ", ".join(missing_boundary_markers),
+                        filename,
+                    )
+                )
 
 
 def validate_canonical_pcm_wav(payload: bytes, audio_file: pathlib.Path) -> int:
@@ -383,6 +562,7 @@ def main() -> int:
             fail("%s must preserve the Windows PowerShell hook" % event_name)
     if not re.fullmatch(r"\d+\.\d+\.\d+", str(manifest.get("version", ""))):
         fail("plugin version must be a three-part semantic version")
+    validate_multilingual_readmes(manifest["version"])
     default_prompts = interface.get("defaultPrompt", ())
     if (
         not isinstance(default_prompts, list)
