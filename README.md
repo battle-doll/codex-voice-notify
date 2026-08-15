@@ -35,6 +35,25 @@ Python or Xcode Command Line Tools. It has no network code or telemetry and
 never stores prompts, messages, tool input, or tool output. Playback is
 non-blocking, and a local lock plus a short cooldown prevents overlapping clips.
 
+### Interactive code ontology
+
+[Open this repository's interactive code ontology](https://rawcdn.githack.com/battle-doll/codex-voice-notify/ce42d10e88fc490271bea2c123a611bfa3d12b13/codex-voice-notify-code-ontology.html),
+generated from Voice Notify `0.1.6` with
+[Code Ontology Companion](https://github.com/battle-doll/code-ontology-companion),
+or [inspect the published HTML in this repository](https://github.com/battle-doll/codex-voice-notify/blob/code-ontology-showcase/codex-voice-notify-code-ontology.html).
+
+The self-contained snapshot maps six Python files into 417 nodes and 769
+relationships, with zero parse warnings and extraction evidence plus source
+spans on every relationship. It supports symbol search, caller and dependency
+inspection, 2D structure and 3D constellation views, and per-relationship rule,
+basis, runtime-status, source-span, and limitation details.
+
+This is static-analysis evidence, not runtime proof. The production Windows and
+macOS hook entry points are PowerShell and POSIX shell and therefore fall
+outside this Python snapshot's adapter coverage. Publication was explicitly
+authorized. The preview uses raw.githack only as an HTML content-type bridge;
+the workbench itself has no runtime CDN or network dependency.
+
 ## Install from GitHub
 
 Give Codex the repository URL and ask it to install the plugin, or run:

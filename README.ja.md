@@ -37,6 +37,27 @@ Python や Xcode Command Line Tools は不要です。ネットワークコー�
 再生はノンブロッキングで、ローカルロックと短いクールダウンによって音声の重複を
 防ぎます。
 
+### インタラクティブなコードオントロジー
+
+このリポジトリの自己完結型インタラクティブオントロジーは、
+[Code Ontology Companion](https://github.com/battle-doll/code-ontology-companion) を使用して
+Voice Notify `0.1.6` から生成したものです。
+
+[インタラクティブグラフを開く](https://rawcdn.githack.com/battle-doll/codex-voice-notify/ce42d10e88fc490271bea2c123a611bfa3d12b13/codex-voice-notify-code-ontology.html)。
+GitHub 上の [HTML ソースを表示・ダウンロード](https://github.com/battle-doll/codex-voice-notify/blob/code-ontology-showcase/codex-voice-notify-code-ontology.html)することもできます。
+
+このスナップショットは 6 個の Python ファイルから 417 ノードと 769 関係を抽出しており、
+パース警告は 0 件です。すべての関係に抽出根拠とソース範囲が付与されています。
+シンボルを検索し、呼び出し元や依存関係を調べ、2D 構造ビューと 3D コンステレーションビューを
+切り替えられます。また、各関係の抽出ルール、定性的な根拠、ランタイム状態、ソース範囲、制限事項を
+詳細に確認できます。
+
+ここで示すのは静的解析の証拠であり、実際のランタイム動作の証明ではありません。
+Windows と macOS で実際に使用される PowerShell `.ps1` および POSIX shell `.sh` のフックエントリポイントは、
+この Python スナップショットの解析範囲には含まれません。この例は明示的な公開許可を得て公開されています。
+raw.githack は、GitHub 上のファイルを HTML の Content-Type でブラウザーに配信するための橋渡しにのみ使用しています。
+自己完結型グラフ自体には、実行時の CDN やネットワーク依存関係はありません。
+
 ## GitHub からインストール
 
 Codex にリポジトリ URL を渡してインストールを依頼するか、次を実行します。
