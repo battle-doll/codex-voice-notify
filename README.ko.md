@@ -36,6 +36,25 @@ Xcode Command Line Tools가 필요하지 않습니다. 네트워크 코드와 �
 없으며 프롬프트·메시지·도구 입력·도구 출력을 저장하지 않습니다. 재생은
 비동기이며 로컬 잠금과 짧은 재생 간격으로 음성이 겹치지 않게 합니다.
 
+### 대화형 코드 온톨로지
+
+[이 저장소의 대화형 코드 온톨로지 열기](https://rawcdn.githack.com/battle-doll/codex-voice-notify/ce42d10e88fc490271bea2c123a611bfa3d12b13/codex-voice-notify-code-ontology.html)를
+선택하면 [Code Ontology Companion](https://github.com/battle-doll/code-ontology-companion)으로
+Voice Notify `0.1.6`을 분석해 생성한 결과를 볼 수 있습니다.
+[저장소에 게시된 HTML 원본](https://github.com/battle-doll/codex-voice-notify/blob/code-ontology-showcase/codex-voice-notify-code-ontology.html)도
+직접 확인할 수 있습니다.
+
+이 자체 완결형 스냅샷은 Python 파일 6개를 노드 417개와 관계 769개로
+구성하며, 파싱 경고는 0개이고 모든 관계에 추출 근거와 소스 위치가 포함됩니다.
+기호 검색, 호출자·종속성 확인, 2D 구조와 3D 별자리 보기, 관계별 규칙·근거·
+런타임 상태·소스 위치·한계를 탐색할 수 있습니다.
+
+이는 런타임 증명이 아니라 정적 분석 근거입니다. 실제 Windows와 macOS 훅
+진입점은 PowerShell 및 POSIX shell이므로 이 Python 스냅샷의 adapter 범위
+밖입니다. 게시에는 명시적인 승인을 받았습니다. 미리보기는 HTML content type을
+제공하기 위해 raw.githack만 사용하며, 워크벤치 자체에는 런타임 CDN 또는
+네트워크 종속성이 없습니다.
+
 ## GitHub에서 설치
 
 Codex에 저장소 URL을 주고 플러그인 설치를 요청하거나 다음 명령을 실행합니다.
