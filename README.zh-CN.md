@@ -33,6 +33,18 @@ OpenAI，也未获 OpenAI 背书。
 或 Xcode Command Line Tools。插件不包含网络代码或遥测，也不会存储提示词、消息、
 工具输入或工具输出。播放不会阻塞任务，本地锁和短暂冷却时间可避免音频重叠。
 
+### 交互式代码本体
+
+本仓库的自包含交互式本体是使用
+[Code Ontology Companion](https://github.com/battle-doll/code-ontology-companion)
+从 Voice Notify `0.1.6` 生成的。Code Ontology Companion 可以将已获授权的 Java/Spring 或 Python 代码库逆向分析为注重隐私的本地知识图谱。
+
+[在线打开 Voice Notify 代码本体](https://rawcdn.githack.com/battle-doll/codex-voice-notify/ce42d10e88fc490271bea2c123a611bfa3d12b13/codex-voice-notify-code-ontology.html)，或[在 GitHub 上查看和下载源 HTML](https://github.com/battle-doll/codex-voice-notify/blob/code-ontology-showcase/codex-voice-notify-code-ontology.html)。
+
+该快照分析了 6 个 Python 文件，包含 417 个节点和 769 条关系，解析警告为零，且每条关系都附有提取证据和源码位置范围。您可以搜索符号，检查调用者和依赖项，在 2D 结构视图与 3D 星座视图之间切换，并查看每条关系的规则、定性依据、运行时状态、源码位置范围和局限性。
+
+这仍是静态分析证据，而非运行时证明。Voice Notify 在 Windows 和 macOS 上的实际钩子入口点分别是 PowerShell (`.ps1`) 和 POSIX shell (`.sh`)，超出了此 Python 快照的适配器覆盖范围。此示例在获得明确的发布授权后公开。在线预览仅使用 raw.githack 作为 HTML 内容类型桥接；自包含工作台本身在运行时不依赖 CDN 或网络。
+
 ## 从 GitHub 安装
 
 将仓库 URL 交给 Codex 并要求安装此插件，或者运行以下命令。
