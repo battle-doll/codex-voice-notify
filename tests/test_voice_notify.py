@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import importlib.util
 import json
 import os
@@ -26,6 +27,40 @@ CONFIG_SPEC = importlib.util.spec_from_file_location(
 assert CONFIG_SPEC and CONFIG_SPEC.loader
 voice_notify_config = importlib.util.module_from_spec(CONFIG_SPEC)
 CONFIG_SPEC.loader.exec_module(voice_notify_config)
+
+VALIDATOR_SPEC = importlib.util.spec_from_file_location(
+    "validate_package", ROOT / "scripts" / "validate_package.py"
+)
+assert VALIDATOR_SPEC and VALIDATOR_SPEC.loader
+validate_package = importlib.util.module_from_spec(VALIDATOR_SPEC)
+VALIDATOR_SPEC.loader.exec_module(validate_package)
+
+
+class DiscoveryEvalTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.discovery = json.loads(
+            (ROOT / "evals" / "cases.json").read_text(encoding="utf-8")
+        )["discovery"]
+
+    def test_bilingual_discovery_golden_set_is_valid(self) -> None:
+        validate_package.validate_discovery_evals(self.discovery)
+
+    def test_discovery_validator_rejects_count_language_and_selection_drift(self) -> None:
+        mutations = []
+        missing_direct = copy.deepcopy(self.discovery)
+        missing_direct["direct"].pop()
+        mutations.append(missing_direct)
+        missing_korean = copy.deepcopy(self.discovery)
+        for case in missing_korean["indirect"]:
+            case["language"] = "en"
+        mutations.append(missing_korean)
+        wrong_negative = copy.deepcopy(self.discovery)
+        wrong_negative["negative"][0]["expected_plugin"] = True
+        mutations.append(wrong_negative)
+        for mutation in mutations:
+            with self.subTest(mutation=mutation):
+                with self.assertRaises(AssertionError):
+                    validate_package.validate_discovery_evals(mutation)
 
 
 class VoiceNotifyTests(unittest.TestCase):
