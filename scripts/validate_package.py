@@ -12,6 +12,7 @@ import re
 import statistics
 import struct
 import sys
+import unicodedata
 import wave
 from urllib.parse import urlparse
 
@@ -82,8 +83,13 @@ EXPECTED_AUDIO_RECORD_KEYS = frozenset({
     "channels",
     "sample_width_bytes",
 })
-EXPECTED_EVAL_KEYS = frozenset(("positive", "negative"))
+EXPECTED_EVAL_KEYS = frozenset(("positive", "negative", "discovery"))
 EXPECTED_EVAL_CASE_KEYS = frozenset(("prompt", "expected"))
+EXPECTED_DISCOVERY_KEYS = frozenset(("purpose", "direct", "indirect", "negative"))
+EXPECTED_DISCOVERY_CASE_KEYS = frozenset(
+    ("id", "language", "prompt", "expected_plugin", "expected_skill")
+)
+EXPECTED_DISCOVERY_COUNTS = {"direct": 10, "indirect": 20, "negative": 20}
 EXPECTED_README_FILES = (
     "README.md",
     "README.ko.md",
@@ -193,6 +199,10 @@ README_HOOK_TRUST_MARKERS = {
     ),
 }
 COMMON_README_MARKERS = (
+    "https://chatgpt.com/plugins/plugins_6a6600dd92148191a6dfe0c16eb85c83",
+    "Verified on 2026-08-29",
+    "GLOBAL/AVAILABLE",
+    "**UNLISTED**",
     "100 WAV",
     "`SessionStart`",
     "`PreToolUse`",
@@ -315,6 +325,66 @@ def require_plugin_directory(raw_path: object, expected: str, label: str) -> Non
         or (ROOT / relative_text).is_symlink()
     ):
         fail("%s must resolve to a real directory inside the plugin root" % label)
+
+
+def validate_discovery_evals(discovery, normalized_prompts=None) -> None:
+    """Validate the bilingual plugin/skill selection golden set."""
+
+    if not isinstance(discovery, dict) or set(discovery) != EXPECTED_DISCOVERY_KEYS:
+        fail("discovery evals must contain purpose, direct, indirect, and negative")
+    if not isinstance(discovery["purpose"], str) or not discovery["purpose"].strip():
+        fail("discovery eval purpose must be a non-empty string")
+    if normalized_prompts is None:
+        normalized_prompts = set()
+    seen_ids = set()
+    for category, expected_count in EXPECTED_DISCOVERY_COUNTS.items():
+        cases = discovery[category]
+        if not isinstance(cases, list) or len(cases) != expected_count:
+            fail(
+                "discovery %s evals must contain exactly %d cases"
+                % (category, expected_count)
+            )
+        expected_selection = category != "negative"
+        languages = set()
+        for case in cases:
+            if not isinstance(case, dict) or set(case) != EXPECTED_DISCOVERY_CASE_KEYS:
+                fail("each discovery eval must contain the exact selection-case fields")
+            case_id = case["id"]
+            if (
+                not isinstance(case_id, str)
+                or not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", case_id)
+                or not case_id.startswith(category + "-")
+                or case_id in seen_ids
+            ):
+                fail("discovery eval IDs must be unique and category-prefixed")
+            seen_ids.add(case_id)
+            language = case["language"]
+            if language not in ("en", "ko"):
+                fail("discovery eval language must be en or ko: %s" % case_id)
+            languages.add(language)
+            prompt = case["prompt"]
+            if (
+                not isinstance(prompt, str)
+                or not prompt.strip()
+                or len(prompt) > 1024
+                or "\n" in prompt
+            ):
+                fail("discovery eval prompt is missing or invalid: %s" % case_id)
+            normalized_prompt = " ".join(
+                unicodedata.normalize("NFC", prompt).split()
+            ).casefold()
+            if normalized_prompt in normalized_prompts:
+                fail("discovery and submission eval prompts must be unique")
+            normalized_prompts.add(normalized_prompt)
+            if (
+                type(case["expected_plugin"]) is not bool
+                or type(case["expected_skill"]) is not bool
+                or case["expected_plugin"] is not expected_selection
+                or case["expected_skill"] is not expected_selection
+            ):
+                fail("discovery selection expectation is invalid: %s" % case_id)
+        if languages != {"en", "ko"}:
+            fail("discovery %s evals must include English and Korean" % category)
 
 
 def validate_multilingual_readmes(version: str) -> None:
@@ -862,7 +932,7 @@ def main() -> int:
 
     evals = json.loads((ROOT / "evals" / "cases.json").read_text("utf-8"))
     if not isinstance(evals, dict) or set(evals) != EXPECTED_EVAL_KEYS:
-        fail("submission evals must contain exactly positive and negative lists")
+        fail("evals must contain reviewer positive/negative lists and discovery cases")
     if (
         not isinstance(evals["positive"], list)
         or not isinstance(evals["negative"], list)
@@ -882,6 +952,7 @@ def main() -> int:
             if normalized_prompt in normalized_prompts:
                 fail("submission eval prompts must be unique")
             normalized_prompts.add(normalized_prompt)
+    validate_discovery_evals(evals["discovery"], normalized_prompts)
     positive_eval_text = "\n".join(
         "%s\n%s" % (case["prompt"], case["expected"])
         for case in evals["positive"]
@@ -899,7 +970,8 @@ def main() -> int:
 
     print(
         "PASS: manifest, guided setup, system-native macOS runtime, 10 hooks, "
-        "%d WAVs, checksums, format, signal, clipping, and 7+3 evals "
+        "%d WAVs, checksums, format, signal, clipping, 7+3 review evals, "
+        "and 10/20/20 discovery evals "
         "(%.2f-%.2fs)"
         % (EXPECTED_ASSET_COUNT, min(durations), max(durations))
     )

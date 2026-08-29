@@ -2,9 +2,33 @@
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-CN.md) | [Русский](README.ru.md)
 
-Offline multilingual voice notifications for ten Codex lifecycle events on macOS
-and Windows. Choose a warm husky voice or a deep bright voice in Korean,
-Japanese, English, Russian, or Simplified Chinese.
+Hear a private, local voice when Codex needs attention or finishes work. Voice
+Notify for Codex is for macOS and Windows users who miss permission prompts,
+subagent changes, context compaction, or task completion while focused elsewhere.
+
+### Use
+
+- Open [Voice Notify for Codex in ChatGPT](https://chatgpt.com/plugins/plugins_6a6600dd92148191a6dfe0c16eb85c83), or use the GitHub install commands below.
+- Complete guided setup, personally review `/hooks`, then choose a voice,
+  language, lifecycle events, or playback interval. You can test, mute, and
+  unmute the local alerts at any time.
+
+### Try it
+
+- `Tell me aloud when Codex needs permission or finishes, using the female English voice.`
+- `Test the local Stop alert, then mute Voice Notify.`
+- `Codex 작업이 끝날 때 오프라인 한국어 음성으로 알려줘.`
+
+### Key boundaries
+
+- Runtime playback is offline and never retains or sends conversation content.
+- The plugin handles only Codex lifecycle voice setup and settings. It is not
+  for general TTS or narration, speech transcription, cloud notifications,
+  arbitrary OS audio automation, or screenshot action extraction.
+- Setup never installs silently or bypasses hook trust. The user reviews and
+  trusts the bundled hook personally; unrelated notification settings remain unchanged.
+
+Verified on 2026-08-29: OpenAI Platform shows **Published**; the latest remote catalog snapshot shows **GLOBAL/AVAILABLE** with discoverability **UNLISTED**. `UNLISTED` does not mean listed or searchable in the public directory. Repository package 0.1.7 is an update candidate; this verified state describes the existing remote entry and does not claim that 0.1.7 has been reviewed or published.
 
 This is an independent plugin with MIT-licensed source code and separately
 licensed voice assets. It is not affiliated with or endorsed by OpenAI.
@@ -24,10 +48,10 @@ The plugin plays a local WAV for:
 - `SubagentStop`
 - `Stop`
 
-Version 0.1.6 bundles 100 WAV files: ten lifecycle events for each combination
-of two voice profiles and five languages. This patch adds complete English,
-Korean, Japanese, Simplified Chinese, and Russian README coverage; audio assets
-and runtime behavior are unchanged from 0.1.5.
+Version 0.1.7 bundles 100 WAV files: ten lifecycle events for each combination
+of two voice profiles and five languages. This patch clarifies discovery
+metadata and equivalent first-screen guidance across all five READMEs; audio
+assets and runtime behavior are unchanged from 0.1.6.
 
 It uses `/bin/sh`, `plutil`, `afplay`, and `osascript` already included with
 macOS, or Windows PowerShell and `System.Media.SoundPlayer`. It does not require
@@ -168,7 +192,7 @@ actually asks for permission.
 
 ## Compatibility
 
-Version 0.1.6 supports macOS and Windows with system-provided audio and
+Version 0.1.7 supports macOS and Windows with system-provided audio and
 scripting components. macOS does not require Python or Xcode Command Line
 Tools. Guided hook setup requires Codex CLI `0.145.0` or newer. Linux is not yet
 supported.

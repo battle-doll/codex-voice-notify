@@ -1,8 +1,8 @@
 {
   "name": "codex-voice-notify",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "license": "MIT",
-  "description": "Offline multilingual voice notifications for Codex lifecycle events on macOS and Windows.",
+  "description": "Hear private, offline voice alerts when Codex needs attention or finishes work on macOS and Windows.",
   "author": {
     "name": "battle-doll",
     "url": "https://github.com/battle-doll"
@@ -20,8 +20,8 @@
   "hooks": "./hooks/hooks.json",
   "interface": {
     "displayName": "Voice Notify for Codex",
-    "shortDescription": "Offline voice notifications",
-    "longDescription": "Play local, privacy-preserving voice notifications for ten Codex lifecycle events on macOS and Windows. Complete guided first-time setup, choose a warm husky or deep bright voice in Korean, Japanese, English, Russian, or Simplified Chinese, configure events, and mute or test playback without sending conversation data anywhere.",
+    "shortDescription": "Private offline Codex alerts",
+    "longDescription": "Hear private, offline voice alerts when Codex needs permission, starts or stops a subagent, compacts context, or finishes work on macOS and Windows. Use guided setup; choose a female or male voice in Korean, Japanese, English, Russian, or Simplified Chinese; select lifecycle events; test playback; or mute alerts. Audio stays local and conversation content is never retained or sent. This plugin is not for general text-to-speech, narration, speech transcription, cloud notifications, arbitrary OS audio automation, screenshot action extraction, or silent installation and hook-trust bypass.",
     "developerName": "battle-doll",
     "category": "Developer Tools",
     "capabilities": [
@@ -35,9 +35,9 @@
     "privacyPolicyURL": "https://github.com/battle-doll/codex-voice-notify/blob/main/PRIVACY.md",
     "termsOfServiceURL": "https://github.com/battle-doll/codex-voice-notify/blob/main/TERMS.md",
     "defaultPrompt": [
-      "Set up Voice Notify: female Korean. Update Codex if needed, then open a new Codex CLI terminal so I can enter /hooks there.",
-      "Change Voice Notify to the male Russian voice.",
-      "Use the female Simplified Chinese voice and show me how to control Voice Notify."
+      "Set up Voice Notify with the female Korean voice, then open a new Codex CLI terminal so I can review /hooks.",
+      "Tell me aloud when Codex needs permission or finishes, using the male English voice.",
+      "Test the Stop alert, then mute all Voice Notify alerts."
     ],
     "brandColor": "#7257D5",
     "composerIcon": "./assets/composer-icon.png",
