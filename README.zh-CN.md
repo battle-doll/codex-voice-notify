@@ -2,9 +2,30 @@
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-CN.md) | [Русский](README.ru.md)
 
-适用于 macOS 和 Windows 的离线多语言语音通知插件，可为十种 Codex 生命周期事件
-播放提示。您可以在韩语、日语、英语、俄语和简体中文之间选择温暖沙哑的声音或低沉
-明亮的声音。
+当 Codex 需要您关注或完成工作时，以私密的本地语音提醒您。它适合容易错过权限请求、
+子代理变化、上下文压缩或任务完成提示的 macOS 和 Windows 用户。
+
+### 使用
+
+- [在 ChatGPT 中打开 Voice Notify for Codex](https://chatgpt.com/plugins/plugins_6a6600dd92148191a6dfe0c16eb85c83)，或使用下方 GitHub 安装命令。
+- 完成引导式设置，亲自检查 `/hooks`，然后选择声音、语言、生命周期事件或播放间隔。
+  您可以随时测试、静音或恢复本地提示。
+
+### 试一试
+
+- `当 Codex 请求权限或完成时，用简体中文女声提醒我。`
+- `测试本地 Stop 提示，然后将 Voice Notify 静音。`
+- `Tell me aloud when Codex finishes, using the female Simplified Chinese voice.`
+
+### 关键边界
+
+- 运行时播放完全离线，不保留或发送任何对话内容。
+- 仅处理 Codex 生命周期语音设置，不适用于通用 TTS 或旁白、语音转写、云通知、
+  任意操作系统音频自动化或从截图提取操作项。
+- 不会静默安装或绕过 hook 信任。用户必须亲自检查并信任插件自带的 hook；
+  不会修改无关的通知设置。
+
+Verified on 2026-08-29: OpenAI Platform shows **Published**; the latest remote catalog snapshot shows **GLOBAL/AVAILABLE** with discoverability **UNLISTED**. `UNLISTED` 并不表示已在公共目录中列出或可搜索。仓库包 0.1.7 是更新候选；此已验证状态仅描述现有远程条目，并不表示 0.1.7 已审核或发布。
 
 这是一个独立插件，源代码采用 MIT 许可证，语音资源采用单独的许可证。它不隶属于
 OpenAI，也未获 OpenAI 背书。
@@ -24,9 +45,9 @@ OpenAI，也未获 OpenAI 背书。
 - `SubagentStop`
 - `Stop`
 
-版本 0.1.6 内含 100 WAV 文件，覆盖两种声音配置、五种语言与十种生命周期事件的
-全部组合。本次补丁提供完整的英语、韩语、日语、简体中文和俄语 README；语音资源和
-运行时行为与 0.1.5 相同。
+版本 0.1.7 内含 100 WAV 文件，覆盖两种声音配置、五种语言与十种生命周期事件的
+全部组合。本次补丁明确了 discovery 元数据，并在五种语言的 README 中提供等效的首屏
+使用说明；语音资源和运行时行为与 0.1.6 相同。
 
 在 macOS 上，插件使用系统自带的 `/bin/sh`、`plutil`、`afplay` 和 `osascript`；
 在 Windows 上，则使用 PowerShell 和 `System.Media.SoundPlayer`。它不需要 Python
@@ -151,7 +172,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_con
 
 ## 兼容性
 
-版本 0.1.6 支持 macOS 和 Windows，并使用系统自带的音频与脚本组件。macOS 不需要
+版本 0.1.7 支持 macOS 和 Windows，并使用系统自带的音频与脚本组件。macOS 不需要
 Python 或 Xcode Command Line Tools。引导式钩子设置需要 Codex CLI `0.145.0`
 或更高版本。暂不支持 Linux。
 

@@ -2,9 +2,31 @@
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-CN.md) | [Русский](README.ru.md)
 
-macOS와 Windows에서 Codex 생명주기 이벤트 10종을 알려 주는 오프라인 다국어
-음성 알림 플러그인입니다. 한국어·일본어·영어·러시아어·중국어 간체 중에서
-따뜻한 허스키 음성이나 낮고 밝은 음성을 선택할 수 있습니다.
+Codex가 주의를 요구하거나 작업을 마쳤을 때 비공개 로컬 음성으로 알려 줍니다.
+권한 요청, 서브 에이전트 변화, 컨텍스트 압축, 작업 완료를 놓치기 쉬운 macOS와
+Windows 사용자를 위한 플러그인입니다.
+
+### 사용
+
+- [ChatGPT에서 Voice Notify for Codex 열기](https://chatgpt.com/plugins/plugins_6a6600dd92148191a6dfe0c16eb85c83) 또는 아래 GitHub 설치 명령을 사용합니다.
+- 안내식 설정을 완료하고 `/hooks`를 직접 검토한 뒤 음성, 언어, 생명주기 이벤트,
+  재생 간격을 선택합니다. 로컬 알림은 언제든 시험, 음소거, 음소거 해제할 수 있습니다.
+
+### 사용해 보기
+
+- `Codex가 권한을 요청하거나 끝나면 여성 영어 음성으로 알려줘.`
+- `로컬 Stop 알림을 시험한 뒤 Voice Notify를 음소거해줘.`
+- `Tell me aloud when Codex finishes, using the female Korean voice.`
+
+### 주요 경계
+
+- 런타임 재생은 오프라인이며 대화 내용을 보관하거나 전송하지 않습니다.
+- Codex 생명주기 음성 설정만 다룹니다. 일반 TTS·내레이션, 음성 전사, 클라우드
+  알림, 임의의 OS 오디오 자동화, 스크린샷 작업 추출에는 사용하지 않습니다.
+- 조용히 설치하거나 훅 신뢰를 우회하지 않습니다. 사용자가 번들 훅을 직접 검토하고
+  신뢰하며, 다른 알림 설정은 변경하지 않습니다.
+
+Verified on 2026-08-29: OpenAI Platform shows **Published**; the latest remote catalog snapshot shows **GLOBAL/AVAILABLE** with discoverability **UNLISTED**. `UNLISTED`는 공개 디렉터리에 등록되었거나 검색 가능하다는 뜻이 아닙니다. 저장소 패키지 0.1.7은 업데이트 후보이며, 이 확인 상태는 기존 원격 항목을 설명할 뿐 0.1.7이 검토되거나 게시되었다고 주장하지 않습니다.
 
 이 플러그인은 OpenAI와 제휴하거나 OpenAI가 보증한 제품이 아닌 독립
 플러그인입니다. 소스 코드는 MIT 라이선스이며 음성 자산에는 별도 라이선스가
@@ -25,10 +47,9 @@ macOS와 Windows에서 Codex 생명주기 이벤트 10종을 알려 주는 오�
 - `SubagentStop`
 - `Stop`
 
-버전 0.1.6에는 음성 프로필 2종, 언어 5종, 생명주기 이벤트 10종의 모든 조합인
-100 WAV 파일이 포함됩니다. 이번 패치는 영어·한국어·일본어·중국어 간체·
-러시아어 README 전체를 제공합니다. 음성 자산과 런타임 동작은 0.1.5와
-같습니다.
+버전 0.1.7에는 음성 프로필 2종, 언어 5종, 생명주기 이벤트 10종의 모든 조합인
+100 WAV 파일이 포함됩니다. 이번 패치는 discovery 메타데이터와 5개 README의
+동등한 첫 화면 안내를 명확히 합니다. 음성 자산과 런타임 동작은 0.1.6과 같습니다.
 
 macOS에 기본 포함된 `/bin/sh`, `plutil`, `afplay`, `osascript`를 사용하며,
 Windows에서는 PowerShell과 `System.Media.SoundPlayer`를 사용합니다. Python이나
@@ -169,7 +190,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_con
 
 ## 호환성
 
-버전 0.1.6은 시스템 기본 오디오 및 스크립트 구성 요소를 사용하는 macOS와
+버전 0.1.7은 시스템 기본 오디오 및 스크립트 구성 요소를 사용하는 macOS와
 Windows를 지원합니다. macOS에서는 Python이나 Xcode Command Line Tools가
 필요하지 않습니다. 훅 안내식 설정에는 Codex CLI `0.145.0` 이상이 필요합니다.
 Linux는 아직 지원하지 않습니다.

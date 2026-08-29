@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.7 - 2026-08-29
+
+- Clarified direct and indirect selection language for private, offline Codex
+  lifecycle alerts while making non-selection boundaries explicit for general
+  TTS, narration, transcription, cloud notifications, arbitrary OS audio,
+  screenshot action extraction, silent installation, and hook-trust bypass.
+- Added equivalent first-screen use guidance to all five READMEs and recorded
+  the verified Published, GLOBAL/AVAILABLE, and UNLISTED directory state.
+- Added a bilingual discovery golden set with 10 direct, 20 indirect, and 20
+  negative cases plus deterministic schema validation.
+- Kept all 100 WAV assets, runtime behavior, permissions, settings defaults,
+  privacy boundaries, and human hook-trust requirements unchanged from 0.1.6.
+
 ## 0.1.6 - 2026-08-15
 
 - Added complete Japanese, Simplified Chinese, and Russian READMEs and refreshed

@@ -1,6 +1,6 @@
 ---
 name: voice-notify-settings
-description: Set up, configure, test, mute, or unmute Voice Notify for Codex. Use for first-time setup after installation, Codex CLI compatibility checks, hook trust guidance, or natural-language requests to change the female or male voice, Korean, Japanese, English, Russian, or Simplified Chinese language, lifecycle events, or playback interval.
+description: Set up, configure, test, mute, or unmute private offline Voice Notify alerts for Codex lifecycle events on macOS or Windows. Use when someone asks to hear when Codex needs attention or finishes, complete first-time setup, check Codex CLI compatibility, review hook trust, choose the female or male voice, select Korean, Japanese, English, Russian, or Simplified Chinese, change events, or adjust playback timing. Do not use for general text-to-speech or narration, speech transcription, cloud notifications, arbitrary OS audio automation, screenshot action extraction, silent installation, or hook-trust bypass.
 ---
 
 # Voice Notify settings

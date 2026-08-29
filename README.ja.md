@@ -2,9 +2,33 @@
 
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-CN.md) | [Русский](README.ru.md)
 
-macOS と Windows で 10 種類の Codex ライフサイクルイベントを知らせる、
-オフラインの多言語音声通知プラグインです。韓国語、日本語、英語、ロシア語、
-簡体字中国語から、温かみのあるハスキーボイスまたは低く明るい声を選べます。
+Codex が注意を求めたときや作業を終えたとき、非公開のローカル音声で知らせます。
+権限要求、サブエージェントの変化、コンテキスト圧縮、タスク完了を見逃しやすい
+macOS と Windows の利用者向けです。
+
+### 使い方
+
+- [ChatGPT で Voice Notify for Codex を開く](https://chatgpt.com/plugins/plugins_6a6600dd92148191a6dfe0c16eb85c83)か、下記の GitHub インストールコマンドを使います。
+- ガイド付き設定を完了し、`/hooks` を自分で確認してから、音声、言語、
+  ライフサイクルイベント、再生間隔を選びます。ローカル通知はテスト、
+  ミュート、ミュート解除できます。
+
+### 試してみる
+
+- `Codex が権限を求めるか終了したら、女性の日本語音声で知らせて。`
+- `ローカルの Stop 通知をテストしてから Voice Notify をミュートして。`
+- `Tell me aloud when Codex finishes, using the female Japanese voice.`
+
+### 重要な境界
+
+- 実行時の再生はオフラインで、会話内容を保存も送信もしません。
+- 対象は Codex ライフサイクル音声の設定だけです。一般的な TTS・ナレーション、
+  音声文字起こし、クラウド通知、任意の OS 音声自動化、スクリーンショットからの
+  アクション抽出には使用しません。
+- サイレントインストールやフック信頼の回避は行いません。利用者が同梱フックを
+  自分で確認して信頼し、無関係な通知設定は変更しません。
+
+Verified on 2026-08-29: OpenAI Platform shows **Published**; the latest remote catalog snapshot shows **GLOBAL/AVAILABLE** with discoverability **UNLISTED**. `UNLISTED` は公開ディレクトリに掲載済みまたは検索可能という意味ではありません。リポジトリの 0.1.7 は更新候補であり、この確認済み状態は既存のリモート項目を説明するだけで、0.1.7 が審査または公開済みとは主張しません。
 
 これは、MIT ライセンスのソースコードと別途ライセンスされた音声アセットを
 使用する独立したプラグインです。OpenAI との提携や OpenAI による承認を
@@ -25,10 +49,10 @@ macOS と Windows で 10 種類の Codex ライフサイクルイベントを知
 - `SubagentStop`
 - `Stop`
 
-バージョン 0.1.6 には、2 種類の音声プロファイル、5 言語、10 種類の
+バージョン 0.1.7 には、2 種類の音声プロファイル、5 言語、10 種類の
 ライフサイクルイベントの全組み合わせに対応する 100 WAV ファイルが含まれます。
-このパッチでは、英語、韓国語、日本語、簡体字中国語、ロシア語の完全な README
-を追加しました。音声アセットと実行時の動作は 0.1.5 から変更していません。
+このパッチでは discovery メタデータと 5 言語 README の同等なファーストビュー
+案内を明確にしました。音声アセットと実行時の動作は 0.1.6 から変更していません。
 
 macOS に標準搭載されている `/bin/sh`、`plutil`、`afplay`、`osascript`、
 または Windows PowerShell と `System.Media.SoundPlayer` を使用します。
@@ -173,7 +197,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_con
 
 ## 互換性
 
-バージョン 0.1.6 は、システム提供の音声・スクリプト機能を使用する macOS と
+バージョン 0.1.7 は、システム提供の音声・スクリプト機能を使用する macOS と
 Windows に対応します。macOS では Python や Xcode Command Line Tools は不要です。
 ガイド付きフック設定には Codex CLI `0.145.0` 以降が必要です。Linux はまだ
 対応していません。
