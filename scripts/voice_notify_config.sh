@@ -263,7 +263,7 @@ inspect_codex() {
             "Codex CLI was not found. Install or expose Codex on PATH, then rerun setup." >&2
         return 3
     fi
-    codex_output=$("$codex_path" --version 2>&1)
+    codex_output=$("$codex_path" --version 2>/dev/null)
     codex_status=$?
     if [ "$codex_status" -ne 0 ]; then
         printf 'Could not determine the Codex CLI version from %s.\n' "$codex_path" >&2

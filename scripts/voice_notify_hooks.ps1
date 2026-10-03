@@ -8,6 +8,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+[Console]::InputEncoding = [Text.UTF8Encoding]::new($false)
 $script:PluginName = 'codex-voice-notify'
 $script:HashPattern = '^[0-9a-fA-F]{64}$'
 $script:CurrentHashPattern = '^(?:sha256:)?[0-9a-fA-F]{64}$'
@@ -112,6 +113,9 @@ function Start-LocalServer([string]$Executable, [string]$Cwd) {
     # Codex JSON-RPC is UTF-8. Windows PowerShell 5.1 otherwise uses the console
     # code page for redirected Process streams, corrupting non-ASCII paths.
     $utf8 = [Text.UTF8Encoding]::new($false, $true)
+    # .NET Framework creates its own StandardInput writer with AutoFlush=true
+    # during Start(). Set a BOM-free input encoding before that writer exists.
+    [Console]::InputEncoding = [Text.UTF8Encoding]::new($false)
     $info.StandardOutputEncoding = $utf8; $info.StandardErrorEncoding = $utf8
     $arguments = @('app-server', '--listen', 'stdio://', '-c', 'analytics.enabled=false', '-c', 'feedback.enabled=false', '-c', 'otel.exporter="none"', '-c', 'mcp_servers={}')
     if ($info.PSObject.Properties.Name -contains 'ArgumentList') { foreach ($argument in $arguments) { $info.ArgumentList.Add($argument) } }

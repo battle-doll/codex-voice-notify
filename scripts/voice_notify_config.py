@@ -57,7 +57,7 @@ def inspect_codex(override: Optional[str] = None) -> Tuple[
             (str(command), "--version"),
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
+            stderr=subprocess.DEVNULL,
             text=True,
             timeout=15,
             check=False,

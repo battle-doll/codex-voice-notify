@@ -176,6 +176,21 @@ jobs:
           export CODEX_VOICE_NOTIFY_NO_PLAY=1
           printf '%s' '{"hook_event_name":"Stop","prompt":"PRIVATE_SENTINEL"}' | /bin/sh "$HOOK_SCRIPT"
 
+      - name: Install official Codex CLI for an isolated integration test
+        run: >-
+          npm install --prefix "${{ runner.temp }}/voice-notify-cli"
+          --no-audit --no-fund --ignore-scripts "@openai/codex@latest"
+      - name: Real Codex install and hook approval on macOS or Linux
+        if: runner.os != 'Windows'
+        env:
+          VOICE_NOTIFY_INTEGRATION_CODEX: ${{ runner.temp }}/voice-notify-cli/node_modules/.bin/codex
+        run: python -m unittest discover -s tests -p test_codex_integration.py -v
+      - name: Real Codex install and hook approval on Windows PowerShell 5.1
+        if: runner.os == 'Windows'
+        env:
+          VOICE_NOTIFY_INTEGRATION_CODEX: ${{ runner.temp }}/voice-notify-cli/node_modules/.bin/codex.cmd
+        run: python -m unittest discover -s tests -p test_codex_integration.py -v
+
   compare-release-digests:
     name: compare release digests
     needs: validate

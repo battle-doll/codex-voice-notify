@@ -31,14 +31,14 @@ class ReleasePrivacyTests(unittest.TestCase):
 
 
 class NativeSetupTests(unittest.TestCase):
-    def _setup(self, version: str) -> tuple[int, bool]:
+    def _setup(self, version: str, warning: bool = False) -> tuple[int, bool]:
         with tempfile.TemporaryDirectory() as directory:
             temp = pathlib.Path(directory)
             settings = temp / "settings.json"
             environment = dict(os.environ, CODEX_VOICE_NOTIFY_CONFIG=str(settings))
             if os.name == "nt":
                 fake = temp / "codex.cmd"
-                fake.write_text("@echo " + version + "\n", encoding="ascii")
+                fake.write_text(("@echo Compatibility warning 1>&2\n" if warning else "") + "@echo " + version + "\n", encoding="ascii")
                 executable = shutil.which("powershell.exe") or shutil.which("pwsh")
                 if not executable:
                     self.skipTest("PowerShell is unavailable")
@@ -47,7 +47,7 @@ class NativeSetupTests(unittest.TestCase):
                            "setup", "-DryRun", "-SkipAudioTest", "-CodexCommand", str(fake)]
             else:
                 fake = temp / "codex"
-                fake.write_text("#!/bin/sh\nprintf '%s\\n' '" + version + "'\n", encoding="ascii")
+                fake.write_text("#!/bin/sh\n" + ("printf '%s\\n' 'Compatibility warning' >&2\n" if warning else "") + "printf '%s\\n' '" + version + "'\n", encoding="ascii")
                 fake.chmod(0o700)
                 command = ["/bin/sh", str(ROOT / "scripts/voice_notify_config.sh"),
                            "setup", "--dry-run", "--skip-audio-test", "--codex-command", str(fake)]
@@ -67,6 +67,11 @@ class NativeSetupTests(unittest.TestCase):
                 status, saved = self._setup(version)
                 self.assertEqual(status, 3)
                 self.assertFalse(saved)
+
+    def test_valid_version_survives_unrelated_stderr_warning(self) -> None:
+        status, saved = self._setup("codex-cli 0.159.0-alpha.12.1", warning=True)
+        self.assertEqual(status, 0)
+        self.assertFalse(saved)
 
 
 if __name__ == "__main__":

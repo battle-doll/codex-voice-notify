@@ -160,7 +160,7 @@ function Get-CodexPath([string]$ExplicitPath) {
 
 function Get-CodexVersionInfo([string]$CodexPath) {
     try {
-        $VersionOutput = (& $CodexPath --version 2>&1 | Out-String).Trim()
+        $VersionOutput = (& $CodexPath --version 2>$null | Out-String).Trim()
         $VersionExitCode = $LASTEXITCODE
     }
     catch {

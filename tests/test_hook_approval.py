@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import textwrap
 import os
 import pathlib
 import re
@@ -140,7 +141,8 @@ class HookApprovalTests(unittest.TestCase):
         fake_script=self.root/"app-server"
         listing=pathlib.Path(self.temp.name)/"listing.json"; listing.write_text(json.dumps(self.listing))
         writes=pathlib.Path(self.temp.name)/"writes.json"
-        fake_script.write_text('''import json, os, sys
+        diagnostic=pathlib.Path(self.temp.name)/"fake-diagnostic.json"
+        fake_body='''
 path=os.environ["VOICE_FAKE_LISTING"]
 listing=json.load(open(path))
 for line in sys.stdin:
@@ -160,8 +162,27 @@ for line in sys.stdin:
         result={"status":"ok"}
     else: raise RuntimeError("Unexpected API method")
     print(json.dumps({"id":message["id"],"result":result},ensure_ascii=False),flush=True)
-''')
-        return fake,writes,{**os.environ,"PYTHONIOENCODING":"utf-8","VOICE_FAKE_LISTING":str(listing),"VOICE_FAKE_WRITES":str(writes)}
+'''
+        # Diagnostics are ONLY for this generated, inert fake process. Production
+        # helpers continue to discard server stderr and never print API payloads.
+        fake_script.write_text('''import json, os, sys, traceback
+diagnostic_path=os.environ["VOICE_FAKE_DIAGNOSTIC"]
+def record(value):
+    with open(diagnostic_path,"w",encoding="utf-8") as output:
+        json.dump(value,output,ensure_ascii=False)
+record({"stage":"started","argv":sys.argv,"stdinEncoding":sys.stdin.encoding,"stdoutEncoding":sys.stdout.encoding})
+line=""
+try:
+'''+textwrap.indent(fake_body,"    ")+'''
+except BaseException as error:
+    record({"stage":"exception","exceptionType":type(error).__name__,"message":str(error),"inputPrefix":line[:48],"argv":sys.argv,"traceback":traceback.format_exc()})
+    raise
+''',encoding="utf-8")
+        return fake,writes,{**os.environ,"PYTHONIOENCODING":"utf-8","VOICE_FAKE_LISTING":str(listing),"VOICE_FAKE_WRITES":str(writes),"VOICE_FAKE_DIAGNOSTIC":str(diagnostic)}
+
+    def fake_failure_message(self, environment, stderr):
+        diagnostic=pathlib.Path(environment["VOICE_FAKE_DIAGNOSTIC"])
+        return stderr+("\nFake app-server diagnostic: "+diagnostic.read_text(encoding="utf-8") if diagnostic.is_file() else "\nThe fake app-server did not reach its startup marker.")
 
     def test_python_stdio_wire_and_config_override_scope(self):
         fake,writes,environment=self.make_fake_executable()
@@ -249,12 +270,12 @@ Resolve-CodexExecutable $Shim
         base=["/usr/bin/osascript","-l","JavaScript",str(ROOT / "scripts/voice_notify_hooks.js")]
         options=["--plugin-root",str(self.root),"--codex-command",str(fake)]
         review=subprocess.run(base+["review-hooks"]+options,cwd=self.root,env=environment,capture_output=True,text=True,timeout=25)
-        self.assertEqual(review.returncode,0,review.stderr)
+        self.assertEqual(review.returncode,0,self.fake_failure_message(environment,review.stderr))
         digest=json.loads(review.stdout)["approvalDigest"]
         self.assertEqual(digest,hooks.approval_digest(self.snapshot()))
         self.assertFalse(writes.exists())
         result=subprocess.run(base+["approve-hooks","--approve",digest]+options,cwd=self.root,env=environment,capture_output=True,text=True,timeout=25)
-        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertEqual(result.returncode,0,self.fake_failure_message(environment,result.stderr))
         self.assertTrue(json.loads(result.stdout)["trusted"])
         self.assertEqual(set(json.loads(writes.read_text())["edits"][0]["value"]),{self.own["key"]})
 
@@ -268,12 +289,12 @@ Resolve-CodexExecutable $Shim
         base=[engine,"-NoProfile","-ExecutionPolicy","Bypass","-File",str(ROOT / "scripts/voice_notify_hooks.ps1")]
         options=["-PluginRoot",str(self.root),"-Codex",str(fake)]
         review=subprocess.run(base+["-Action","review-hooks"]+options,cwd=self.root,env=environment,capture_output=True,text=True,encoding="utf-8",timeout=25)
-        self.assertEqual(review.returncode,0,review.stderr)
+        self.assertEqual(review.returncode,0,self.fake_failure_message(environment,review.stderr))
         digest=json.loads(review.stdout)["approvalDigest"]
         self.assertIn("알림",json.loads(review.stdout)["hooks"][0]["command"])
         self.assertFalse(writes.exists())
         result=subprocess.run(base+["-Action","approve-hooks","-Approve",digest]+options,cwd=self.root,env=environment,capture_output=True,text=True,encoding="utf-8",timeout=25)
-        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertEqual(result.returncode,0,self.fake_failure_message(environment,result.stderr))
         self.assertTrue(json.loads(result.stdout)["trusted"])
         self.assertEqual(set(json.loads(writes.read_text())["edits"][0]["value"]),{self.own["key"]})
 
@@ -284,6 +305,34 @@ Resolve-CodexExecutable $Shim
     @unittest.skipUnless(WINDOWS_POWERSHELL,"Windows PowerShell 5.1 runtime unavailable")
     def test_native_windows_powershell51_review_and_approval_are_scoped(self):
         self.check_powershell_review_and_approval(WINDOWS_POWERSHELL)
+
+    @unittest.skipUnless(WINDOWS_POWERSHELL,"Windows PowerShell 5.1 runtime unavailable")
+    def test_windows_powershell51_original_process_input_writer_emits_bom(self):
+        # Reproduce the Framework writer's startup preamble with a fake process;
+        # the real helper's BOM-free encoding must pass the approval test above.
+        fake,writes,environment=self.make_fake_executable()
+        runner=pathlib.Path(self.temp.name)/"reproduce-input-bom.ps1"
+        runner.write_text('''param([string]$Executable,[string]$Cwd)
+$ErrorActionPreference='Stop'
+[Console]::InputEncoding=[Text.Encoding]::UTF8
+$info=[Diagnostics.ProcessStartInfo]::new()
+$info.FileName=$Executable; $info.Arguments='app-server'; $info.WorkingDirectory=$Cwd
+$info.UseShellExecute=$false; $info.CreateNoWindow=$true
+$info.RedirectStandardInput=$true; $info.RedirectStandardOutput=$true; $info.RedirectStandardError=$true
+$process=[Diagnostics.Process]::new(); $process.StartInfo=$info
+$null=$process.Start()
+try {
+    $process.StandardInput.WriteLine('{"id":1,"method":"initialize","params":{}}')
+    $process.StandardInput.Close()
+    if(-not $process.WaitForExit(10000)) { throw 'Fake process did not exit' }
+} finally { if(-not $process.HasExited){$process.Kill()}; $process.Dispose() }
+''',encoding="utf-8")
+        result=subprocess.run([WINDOWS_POWERSHELL,"-NoProfile","-ExecutionPolicy","Bypass","-File",str(runner),"-Executable",str(fake),"-Cwd",str(self.root)],cwd=self.root,env=environment,capture_output=True,text=True,timeout=15)
+        self.assertEqual(result.returncode,0,self.fake_failure_message(environment,result.stderr))
+        diagnostic=json.loads(pathlib.Path(environment["VOICE_FAKE_DIAGNOSTIC"]).read_text(encoding="utf-8"))
+        self.assertEqual(diagnostic.get("exceptionType"),"JSONDecodeError",diagnostic)
+        self.assertTrue(diagnostic.get("inputPrefix","").startswith("\ufeff"),diagnostic)
+        self.assertFalse(writes.exists())
 
 
 if __name__ == "__main__": unittest.main()

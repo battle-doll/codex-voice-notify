@@ -99,6 +99,7 @@ STRUCTURAL_RELEASE_FILES = frozenset(
         "tests/test_voice_notify.py",
         "tests/test_linux_notify.py",
         "tests/test_hook_approval.py",
+        "tests/test_codex_integration.py",
         "tests/test_native_setup.py",
     }
 )
