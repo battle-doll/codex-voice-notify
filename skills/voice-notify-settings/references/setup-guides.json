@@ -5,7 +5,7 @@
       "greeting": "Voice Notify를 설정해 드리겠습니다. 한국어로 안내하고, 음성의 언어와 여성·남성 목소리는 따로 선택할 수 있습니다.",
       "setup_prompt": "Voice Notify를 설정해줘. 내 언어로 음성 언어 5종과 여성·남성 목소리를 안내하고, 훅 내용을 보여 준 뒤 승인받아 처리해줘.",
       "preference_question": "알림 언어와 여성·남성 목소리를 어떻게 설정할까요? 이미 정한 선택이 있으면 그대로 유지합니다.",
-      "consent_summary": "표시된 정확한 Voice Notify 훅 명령을 검토하신 뒤 승인하면 해당 훅만 자동으로 승인 처리합니다. 다른 훅은 바꾸지 않으며 대화 내용을 읽거나 보관·전송하지 않습니다. 재생과 훅 설정은 로컬에서 처리하며 외부 네트워크 요청이 없습니다.",
+      "consent_summary": "표시된 정확한 Voice Notify 훅 명령을 검토하신 뒤 승인하면 해당 훅만 자동으로 승인 처리합니다. 다른 훅은 바꾸지 않으며 대화 내용을 읽거나 보관·전송하지 않습니다. 음성은 오프라인으로 재생하고 훅 승인은 Codex의 로컬 인터페이스로 처리합니다.",
       "hearing_confirmation": "방금 시험 알림이 실제로 들리셨나요?",
       "language_options": [
         {
@@ -44,7 +44,7 @@
       "greeting": "I can set up Voice Notify and guide you in English. Choose the spoken language and female or male voice separately.",
       "setup_prompt": "Set up Voice Notify in my language. Explain the five audio languages and female/male voices, show the exact hooks, and apply approval after my consent.",
       "preference_question": "Which notification language and female or male voice would you like? I will keep any choice you have already made.",
-      "consent_summary": "After you review and approve the exact Voice Notify hook commands shown, I can apply approval for only those hooks. Other hooks remain unchanged. Conversation content is not read, stored, or sent. Playback and hook setup run locally without external network requests.",
+      "consent_summary": "After you review and approve the exact Voice Notify hook commands shown, I can apply approval for only those hooks. Other hooks remain unchanged. Conversation content is not read, stored, or sent. Audio playback is offline, and hook approval uses Codex's local interface.",
       "hearing_confirmation": "Did you actually hear the test notification just now?",
       "language_options": [
         {
@@ -83,7 +83,7 @@
       "greeting": "Voice Notify を設定し、日本語でご案内します。通知の言語と女性・男性の声は別々に選べます。",
       "setup_prompt": "Voice Notify を設定して。私の言語で音声の5言語と女性・男性の声を案内し、正確なフックを見せて同意後に承認を適用して。",
       "preference_question": "通知の言語と女性・男性の声はどれにしますか？すでに選択済みなら、その設定を維持します。",
-      "consent_summary": "表示された正確な Voice Notify フックコマンドを確認して同意した後、そのフックだけを自動承認します。他のフックは変更せず、会話内容を読み取り、保存、送信しません。再生とフック設定はローカルで行い、外部ネットワークに接続しません。",
+      "consent_summary": "表示された正確な Voice Notify フックコマンドを確認して同意した後、そのフックだけを自動承認します。他のフックは変更せず、会話内容を読み取り、保存、送信しません。音声はオフラインで再生し、フックの承認には Codex のローカルインターフェースを使います。",
       "hearing_confirmation": "先ほどのテスト通知は実際に聞こえましたか？",
       "language_options": [
         {
@@ -122,7 +122,7 @@
       "greeting": "Я помогу настроить Voice Notify и объясню шаги по-русски. Язык уведомлений и женский или мужской голос выбираются отдельно.",
       "setup_prompt": "Настрой Voice Notify на моём языке: объясни пять языков звука и женский/мужской голос, покажи точные хуки и примени одобрение после моего согласия.",
       "preference_question": "Какой язык уведомлений и голос — женский или мужской — вы выбираете? Уже выбранные настройки будут сохранены.",
-      "consent_summary": "После вашей проверки и согласия автоматически одобряются только показанные точные команды хуков Voice Notify. Другие хуки не меняются. Содержимое разговоров не читается, не сохраняется и не передаётся. Воспроизведение и настройка хуков выполняются локально без внешних сетевых запросов.",
+      "consent_summary": "После вашей проверки и согласия автоматически одобряются только показанные точные команды хуков Voice Notify. Другие хуки не меняются. Содержимое разговоров не читается, не сохраняется и не передаётся. Звук воспроизводится офлайн, а одобрение хуков выполняется через локальный интерфейс Codex.",
       "hearing_confirmation": "Вы действительно услышали только что проверенное уведомление?",
       "language_options": [
         {
@@ -161,7 +161,7 @@
       "greeting": "我会帮您设置 Voice Notify，并用中文说明步骤。通知语言和女声、男声可以分别选择。",
       "setup_prompt": "设置 Voice Notify。用我的语言说明五种语音语言和女声、男声，展示确切的钩子内容，在我同意后自动处理批准。",
       "preference_question": "您想选择哪种通知语言以及女声或男声？已经选定的设置将保留。",
-      "consent_summary": "您审阅并同意所显示的确切 Voice Notify 钩子命令后，只自动批准这些钩子，不修改其他钩子。不读取、保存或发送对话内容。播放和钩子设置在本地处理，不发送外部网络请求。",
+      "consent_summary": "您审阅并同意所显示的确切 Voice Notify 钩子命令后，只自动批准这些钩子，不修改其他钩子。不读取、保存或发送对话内容。音频离线播放，钩子批准通过 Codex 的本地接口处理。",
       "hearing_confirmation": "您刚才实际听到测试通知了吗？",
       "language_options": [
         {
