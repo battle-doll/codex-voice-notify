@@ -3,36 +3,31 @@
 [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md) | [简体中文](README.zh-CN.md) | [Русский](README.ru.md)
 
 Codex が注意を求めたときや作業を終えたとき、非公開のローカル音声で知らせます。
-権限要求、サブエージェントの変化、コンテキスト圧縮、タスク完了を見逃しやすい
-macOS と Windows の利用者向けです。
+macOS、Windows、Linux に対応します。
 
 ### 使い方
 
-- [ChatGPT で Voice Notify for Codex を開く](https://chatgpt.com/plugins/plugins_6a6600dd92148191a6dfe0c16eb85c83)か、下記の GitHub インストールコマンドを使います。
-- ガイド付き設定を完了し、`/hooks` を自分で確認してから、音声、言語、
-  ライフサイクルイベント、再生間隔を選びます。ローカル通知はテスト、
-  ミュート、ミュート解除できます。
+- GitHub からインストールし、`Voice Notify を韓国語の女性音声で初回設定して。フックを説明し、承認前に確認して。` と依頼します。
+- Codex が互換性と音声を確認し、設定を保存して正確な Voice Notify フックコマンドを示します。内容を確認して承認した後、Codex の公式ローカルインターフェイスで承認処理を自動化できます。
+- 音声、言語、イベント、再生間隔を選択し、いつでもテスト、ミュート、ミュート解除できます。
 
 ### 試してみる
 
 - `Codex が権限を求めるか終了したら、女性の日本語音声で知らせて。`
+- `Codex 更新後に Voice Notify が動かない原因を調べて。`
 - `ローカルの Stop 通知をテストしてから Voice Notify をミュートして。`
-- `Tell me aloud when Codex finishes, using the female Japanese voice.`
 
 ### 重要な境界
 
-- 実行時の再生はオフラインで、会話内容を保存も送信もしません。
-- 対象は Codex ライフサイクル音声の設定だけです。一般的な TTS・ナレーション、
-  音声文字起こし、クラウド通知、任意の OS 音声自動化、スクリーンショットからの
-  アクション抽出には使用しません。
-- サイレントインストールやフック信頼の回避は行いません。利用者が同梱フックを
-  自分で確認して信頼し、無関係な通知設定は変更しません。
+- 再生はオフラインで、会話内容を保存も送信もしません。
+- Codex ライフサイクル音声の設定専用です。一般的な TTS、ナレーション、文字起こし、クラウド通知、任意の OS 音声自動化、スクリーンショットからのアクション抽出には使いません。
+- フック承認には利用者の確認と同意が必要です。確認済みの Voice Notify フックだけを承認し、他のフックや通知設定は変更しません。
 
-Verified on 2026-08-29: OpenAI Platform shows **Published**; the latest remote catalog snapshot shows **GLOBAL/AVAILABLE** with discoverability **UNLISTED**. `UNLISTED` は公開ディレクトリに掲載済みまたは検索可能という意味ではありません。リポジトリの 0.1.7 は更新候補であり、この確認済み状態は既存のリモート項目を説明するだけで、0.1.7 が審査または公開済みとは主張しません。
+2026-10-03 確認: OpenAI Platform の既存 0.1.7 項目は **Published** です。0.2.0 は未提出で、現在のディレクトリ掲載・検索可否は未確認です。過去の記録 — Verified on 2026-08-29: **GLOBAL/AVAILABLE**、**UNLISTED** は過去のスナップショットで、現在の掲載状態を示しません。[既存項目](https://chatgpt.com/plugins/plugins_6a6600dd92148191a6dfe0c16eb85c83)。
 
-これは、MIT ライセンスのソースコードと別途ライセンスされた音声アセットを
-使用する独立したプラグインです。OpenAI との提携や OpenAI による承認を
-示すものではありません。
+2026-10-03 に確認した [OpenAI の提出文書](https://developers.openai.com/plugins/deploy/submission)では、ライフサイクルフックを含む ZIP は現在提出できません。0.2.0 は準備済みの更新候補で、公開提出は保留中です。[SUBMISSION.md](SUBMISSION.md) を参照してください。
+
+MIT ライセンスのソースと別途ライセンスされた音声アセットを使用する独立したプラグインです。OpenAI との提携や OpenAI による承認を示しません。
 
 ## 機能
 
@@ -49,17 +44,9 @@ Verified on 2026-08-29: OpenAI Platform shows **Published**; the latest remote c
 - `SubagentStop`
 - `Stop`
 
-バージョン 0.1.7 には、2 種類の音声プロファイル、5 言語、10 種類の
-ライフサイクルイベントの全組み合わせに対応する 100 WAV ファイルが含まれます。
-このパッチでは discovery メタデータと 5 言語 README の同等なファーストビュー
-案内を明確にしました。音声アセットと実行時の動作は 0.1.6 から変更していません。
+バージョン 0.2.0 は、2 音声、5 言語、10 イベントに対応する 100 WAV ファイルを同梱します。音声アセットと既定値は変更していません。最新 Codex の prerelease バージョン表記、読み取り専用診断、利用者の同意後のフック承認処理、Linux 再生に対応しました。
 
-macOS に標準搭載されている `/bin/sh`、`plutil`、`afplay`、`osascript`、
-または Windows PowerShell と `System.Media.SoundPlayer` を使用します。
-Python や Xcode Command Line Tools は不要です。ネットワークコードや
-テレメトリはなく、プロンプト、メッセージ、ツール入力、ツール出力を保存しません。
-再生はノンブロッキングで、ローカルロックと短いクールダウンによって音声の重複を
-防ぎます。
+macOS の通常の再生・設定は標準の `/bin/sh`、`plutil`、`afplay`、`osascript` を使い、Python や Xcode Command Line Tools は不要です。Windows は PowerShell と `System.Media.SoundPlayer` を使います。Linux は Python 3 標準ライブラリと、`pw-play`、`paplay`、`aplay`、`ffplay` の順で最初に見つかった再生ソフトを使います。音声パッケージは自動インストールしません。実行時の再生には外部へのネットワークコードやテレメトリはなく、プロンプト、メッセージ、ツール入力、ツール出力を保存しません。ローカルロックと短い間隔で重複再生を防ぎます。
 
 ### インタラクティブなコードオントロジー
 
@@ -82,11 +69,11 @@ Windows と macOS で実際に使用される PowerShell `.ps1` および POSIX 
 raw.githack は、GitHub 上のファイルを HTML の Content-Type でブラウザーに配信するための橋渡しにのみ使用しています。
 自己完結型グラフ自体には、実行時の CDN やネットワーク依存関係はありません。
 
+これは過去の 0.1.6 スナップショットで、0.2.0 の Linux・フック承認変更を反映して再生成したものではありません。
+
 ## GitHub からインストール
 
-Codex にリポジトリ URL を渡してインストールを依頼するか、次を実行します。
-
-macOS:
+macOS / Linux:
 
 ```bash
 codex plugin marketplace add battle-doll/codex-voice-notify --ref main
@@ -102,62 +89,38 @@ codex.cmd plugin add codex-voice-notify@codex-voice-notify
 
 ## 初回セットアップ
 
-インストール後、プラグインの **Finish first-time setup** プロンプトを選択するか、
-Codex に自然な言葉で依頼します。
+Codex は会話中の言語で設定を案内し、韓国語・英語・日本語・ロシア語・簡体字中国語の5言語と女性・男性の声を示します。案内の言語と音声の言語は別々に選べます。既存の設定や指定した選択を維持し、未指定の項目だけ簡潔に確認します。新規設定では女性の声と利用者の対応音声言語を提案し、対応する音声がなければ韓国語を提案します。スクリプトの既定値 `female/ko` は変わりません。フックの確認、同意、実際に聞こえたかの確認も利用者の言語で行います。
 
-> 韓国語の女性音声で Voice Notify の初回セットアップを完了して。
-> 必要であれば Codex CLI を確認して更新して。
+インストール後、**Finish first-time setup** を選択するか、次のように依頼します。
 
-この開始プロンプトは安全に繰り返し実行できます。現在の Codex プラグイン UI は、
-初回使用後にプロンプトを条件付きで非表示にしないため、復旧や再セットアップにも
-引き続き利用できます。
+> Voice Notify を韓国語の女性音声で初回設定して。フックを説明し、承認前に確認して。
 
-ガイド付きセットアップでは、次を行います。
+繰り返し実行できるセットアップ手順です。
 
-1. `/hooks` に対応する Codex CLI バージョンを確認し、セットアッププロンプトで
-   明示的に許可された場合に限り、必要に応じて npm または Homebrew の
-   インストールを更新します。
-2. 選択した音声と言語を保存します。
-3. ローカルの `Stop` 通知をテスト再生します。
-4. 新しいターミナルウィンドウを開き、確認済みの Codex CLI をその中で起動します。
-   単に `/hooks` の入力案内を表示するだけではありません。
+1. 読み取り専用の `doctor` で選択した CLI、バージョン、再生ソフト、設定を確認します。Codex CLI `0.145.0` 以上が必要で、現在の prerelease 接尾辞も認識します。
+2. 音声と言語を保存し、ローカル `Stop` 音声をテストします。実際に聞こえたか確認します。
+3. `review-hooks` で正確な Voice Notify コマンド、範囲、`approvalDigest`を提示し、そのコマンドの承認を求めます。
+4. 明示的な承認後、同じ `approvalDigest`を指定して `approve-hooks` を実行します。Codex の公式ローカル app-server インターフェイスが確認済みの Voice Notify フックだけを承認します。変更されたコマンドは再確認が必要です。信頼ストアを直接編集せず、確認を回避しません。
+5. Codex を完全に終了して再起動し、有効なイベントの音声を一度聞きます。設定テストや承認記録だけではライフサイクル再生の成功を証明できません。
 
-同梱のセットアップスクリプト自体は互換性を報告するだけで、ホストの
-インストールを変更しません。Codex は CLI が npm、Homebrew cask、または
-その他の場所からインストールされたかを確認し、許可された更新だけを行います。
+自動承認インターフェイスを使えない場合、macOS/Linux の `setup --open-hooks` または Windows の `setup -OpenHooks` で CLI ターミナルを開きます。その中で `/hooks` と入力し、同梱コマンドを確認して、明示的に信頼してください。Codex を完全に終了して再起動してから実際のイベントをテストします。headless 環境や起動用ターミナルがない場合、選択した CLI を手動で起動して `/hooks` を入力します。
 
-新しく開いた Codex CLI ターミナルで `/hooks` と入力し、同梱コマンドを確認して、
-明示的に信頼してください。その後、実際のライフサイクルイベントをテストする前に
-Codex を完全に終了して再起動します。フックの信頼設定は保存されますが、すでに
-実行中の Codex プロセスでは、次回起動まで新たに信頼したプラグインフックが
-有効にならない場合があります。Codex はインストール時にサードパーティ製フックを
-自動的に信頼せず、このプラグインもその確認を回避しません。
-
-実行中の CLI 実行ファイルを置き換えられず更新に失敗した場合は、その CLI を終了し、
-表示された更新コマンドを別のターミナルで実行してからセットアップをやり直してください。
+スクリプトは Codex や依存関係を無断で更新・インストールしません。古い CLI は、別途明示的に許可された場合だけ、導入元が確認済みの npm・Homebrew で更新できます。デスクトップ同梱版や不明な導入元は、その導入方法の公式更新経路を使います。使用中の CLI は更新前に終了します。
 
 ## 設定
 
-いつでも自然な言葉で依頼できます。例:
+「女性の英語音声に変更して」「男性の日本語にして」「女性のロシア語にして」「男性の簡体字中国語にして」「Voice Notify をミュートして」のように依頼できます。
 
-- 「英語の女性音声を使って。」
-- 「Voice Notify を日本語の男性音声に変更して。」
-- 「ロシア語の女性音声を使って。」
-- 「Voice Notify を簡体字中国語の男性音声に変更して。」
-- 「韓国語の女性音声に変更して。」
-- 「Voice Notify をミュートして。」
-- 「Stop 通知をテストして。」
-
-Codex は `female` または `male` と、韓国語／ハングル (`ko`)、日本語 (`ja`)、
-英語 (`en`)、ロシア語 (`ru`)、簡体字中国語 (`zh-CN`) を同梱の設定コマンドに
-対応付けます。同梱の中国語バリエーションは `zh-CN` だけなので、種類を指定しない
-「中国語」または「中文」という依頼は `zh-CN`（簡体字中国語、中国本土の標準中国語）
-になります。クローンしたリポジトリから手動で実行することもできます。
+`female` または `male` と、韓国語/ハングル (`ko`)、日本語 (`ja`)、英語 (`en`)、ロシア語 (`ru`)、簡体字中国語 (`zh-CN`) を設定に対応させます。単に「中国語」「中文」と指定した場合は唯一の中国語音声 `zh-CN`（簡体字、中国本土の標準中国語）を選びます。クローンから手動実行するコマンド:
 
 macOS:
 
 ```bash
-/bin/sh scripts/voice_notify_config.sh setup --voice female --language ko --open-hooks
+/bin/sh scripts/voice_notify_config.sh doctor
+/bin/sh scripts/voice_notify_config.sh setup --voice female --language ko
+/bin/sh scripts/voice_notify_config.sh review-hooks
+# 明示的な承認後、<approvalDigest> を今回の確認で返された値に置き換えます:
+/bin/sh scripts/voice_notify_config.sh approve-hooks --approve "<approvalDigest>"
 /bin/sh scripts/voice_notify_config.sh show
 /bin/sh scripts/voice_notify_config.sh set --voice female --language ko
 /bin/sh scripts/voice_notify_config.sh set --voice male --language en
@@ -170,7 +133,11 @@ macOS:
 Windows:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 setup -Voice female -Language ko -OpenHooks
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 doctor
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 setup -Voice female -Language ko
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 review-hooks
+# 明示的な承認後、<approvalDigest> を今回の確認で返された値に置き換えます:
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 approve-hooks -Approve "<approvalDigest>"
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 show
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 set -Voice female -Language ko
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 set -Voice male -Language ru
@@ -179,28 +146,33 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_con
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\voice_notify_config.ps1 mute
 ```
 
-既定値は `female`、`ko`、最小再生間隔 450 ms、8 イベント有効です。
-ツールごとの通知が多くなりすぎないよう、`PreToolUse` と `PostToolUse` は利用可能な
-まま既定で無効になっています。`PermissionRequest` は、Codex が実際に権限を
-求めたときだけ再生されます。
+Linux:
+
+```bash
+python3 scripts/voice_notify_config.py doctor
+python3 scripts/voice_notify_config.py setup --voice female --language ko
+python3 scripts/voice_notify_config.py review-hooks
+# 明示的な承認後、<approvalDigest> を今回の確認で返された値に置き換えます:
+python3 scripts/voice_notify_config.py approve-hooks --approve "<approvalDigest>"
+python3 scripts/voice_notify_config.py show
+python3 scripts/voice_notify_config.py set --voice male --language en
+python3 scripts/voice_notify_config.py test --event Stop
+python3 scripts/voice_notify_config.py mute
+```
+
+既定値は `female`、`ko`、最短間隔 450 ms、8 イベント有効です。`PreToolUse` と `PostToolUse` は使用できますが既定では無効です。`PermissionRequest` は Codex が実際に権限を要求したときだけ再生します。
 
 ## トラブルシューティング
 
-- `/hooks` が認識されない場合は、Codex CLI を `0.145.0` 以降に更新し、
-  セットアップをやり直してください。
-- PowerShell が `codex.ps1` または `npm.ps1` をブロックする場合は、
-  `codex.cmd` または `npm.cmd` を使用してください。同梱の Windows 設定コマンドの
-  `-ExecutionPolicy Bypass` はそのプロセスだけに適用され、システムの実行ポリシーを
-  変更しません。
-- テスト音声は再生されるのにライフサイクル通知が出ない場合は、`/hooks` でフックを
-  確認して信頼し、Codex を完全に再起動してください。
+- まず `doctor` を実行します。診断は設定変更、フック承認、音声再生をしません。ローカル出力にはパスが含まれる場合があるため、共有前に伏せてください。
+- `/hooks` がない場合、選択した CLI を確認し、利用者の許可を得て更新します。デスクトップアプリと別途導入した CLI の版は異なる場合があります。
+- テスト音声だけ聞こえる場合、承認を確認して対象の Codex を完全に終了・再起動し、実際の有効イベントをテストします。
+- PowerShell が `codex.ps1`・`npm.ps1` をブロックする場合は `codex.cmd`・`npm.cmd` を使います。`-ExecutionPolicy Bypass` はその設定プロセスだけに適用され、システム方針は変えません。
+- Linux は Python 3、対応再生ソフト、利用可能な音声デバイス・サーバーが必要です。SSH、コンテナー、WSL、headless セッションでは再生ソフトがあっても音が出ない場合があります。パッケージは自動導入しません。
 
 ## 互換性
 
-バージョン 0.1.7 は、システム提供の音声・スクリプト機能を使用する macOS と
-Windows に対応します。macOS では Python や Xcode Command Line Tools は不要です。
-ガイド付きフック設定には Codex CLI `0.145.0` 以降が必要です。Linux はまだ
-対応していません。
+バージョン 0.2.0 は macOS、Windows、Linux をサポートします。macOS の通常の再生・設定は Python 不要で、Windows は標準 PowerShell、Linux は Python 3 と対応再生ソフトを使います。自動フック承認は macOS 標準の `osascript` JXA、Windows 標準 PowerShell、Linux Python 3 を使い、選択した CLI の公式ローカル app-server インターフェイスが必要です。利用できなければ `/hooks` で手動確認します。CLI `0.145.0` 以上が必要です。対応表記はすべてのデスクトップ版や音声環境、headless セッションでの実際の聴取確認を意味しません。
 
 ## ライセンス
 

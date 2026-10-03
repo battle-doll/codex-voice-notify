@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 import time
@@ -45,12 +46,28 @@ DEFAULT_SETTINGS = {
 MAX_INPUT_BYTES = 1024 * 1024
 MAX_SETTINGS_BYTES = 64 * 1024
 MACOS_PLAYER = pathlib.Path("/usr/bin/afplay")
+LINUX_PLAYERS = (
+    ("pw-play", ()),
+    ("paplay", ()),
+    ("aplay", ("-q",)),
+    ("ffplay", ("-nodisp", "-autoexit", "-loglevel", "quiet")),
+)
+
+
+def _xdg_directory(variable: str, fallback: str) -> pathlib.Path:
+    """The XDG specification ignores empty and relative base directories."""
+    candidate = os.environ.get(variable, "")
+    if candidate and pathlib.Path(candidate).is_absolute():
+        return pathlib.Path(candidate)
+    return pathlib.Path.home() / fallback
 
 
 def user_settings_path() -> pathlib.Path:
     override = os.environ.get("CODEX_VOICE_NOTIFY_CONFIG")
     if override:
         return pathlib.Path(override).expanduser()
+    if sys.platform.startswith("linux"):
+        return _xdg_directory("XDG_CONFIG_HOME", ".config") / "codex-voice-notify" / "settings.json"
     return pathlib.Path.home() / ".config" / "codex-voice-notify" / "settings.json"
 
 
@@ -134,10 +151,25 @@ def _runtime_dir() -> pathlib.Path:
         base = pathlib.Path(
             os.environ.get("LOCALAPPDATA", pathlib.Path.home() / "AppData" / "Local")
         ) / "codex-voice-notify"
+    elif sys.platform.startswith("linux"):
+        base = _xdg_directory("XDG_CACHE_HOME", ".cache") / "codex-voice-notify"
     else:
         base = pathlib.Path.home() / "Library" / "Caches" / "codex-voice-notify"
     base.mkdir(mode=0o700, parents=True, exist_ok=True)
     return base
+
+
+def _player_environment() -> Dict[str, str]:
+    # Retain only system/audio variables. Hook payloads, Codex credentials,
+    # arbitrary environment values, and conversation text never reach players.
+    environment = {"PATH": os.environ.get("PATH", "/usr/bin:/bin")}
+    names = ["LANG", "LC_ALL", "SYSTEMROOT", "WINDIR", "COMSPEC", "TEMP", "TMP"]
+    if sys.platform.startswith("linux"):
+        names.extend(("HOME", "XDG_RUNTIME_DIR", "XDG_CONFIG_HOME", "DBUS_SESSION_BUS_ADDRESS"))
+    for name in names:
+        if name in os.environ:
+            environment[name] = os.environ[name]
+    return environment
 
 
 def dispatch_playback(audio_path: pathlib.Path, min_interval_ms: int) -> None:
@@ -146,10 +178,6 @@ def dispatch_playback(audio_path: pathlib.Path, min_interval_ms: int) -> None:
     try:
         runtime_dir = _runtime_dir()
         lock_path = runtime_dir / "playback.lock"
-        child_env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin")}
-        for name in ("LANG", "SYSTEMROOT", "WINDIR", "COMSPEC", "TEMP", "TMP"):
-            if name in os.environ:
-                child_env[name] = os.environ[name]
         subprocess.Popen(
             (
                 sys.executable,
@@ -164,7 +192,7 @@ def dispatch_playback(audio_path: pathlib.Path, min_interval_ms: int) -> None:
             stderr=subprocess.DEVNULL,
             close_fds=True,
             start_new_session=True,
-            env=child_env,
+            env=_player_environment(),
         )
     except (OSError, ValueError):
         return
@@ -199,7 +227,8 @@ def _play_worker(audio_path: pathlib.Path, lock_path: pathlib.Path, interval_ms:
             previous = float(previous_raw) if previous_raw else 0.0
         except (OSError, ValueError):
             previous = 0.0
-        if now - previous < max(0, interval_ms) / 1000.0:
+        elapsed = now - previous
+        if 0 <= elapsed < max(0, interval_ms) / 1000.0:
             return 0
 
         try:
@@ -220,21 +249,35 @@ def _play_worker(audio_path: pathlib.Path, lock_path: pathlib.Path, interval_ms:
 
 
 def player_available() -> bool:
-    return os.name == "nt" or MACOS_PLAYER.is_file()
+    return os.name == "nt" or player_command() is not None
+
+
+def player_command() -> Optional[tuple]:
+    if sys.platform == "darwin":
+        return (str(MACOS_PLAYER),) if MACOS_PLAYER.is_file() else None
+    if sys.platform.startswith("linux"):
+        for executable, arguments in LINUX_PLAYERS:
+            path = shutil.which(executable)
+            if path:
+                return (str(pathlib.Path(path).resolve()),) + arguments
+    return None
 
 
 def play_audio_sync(audio_path: pathlib.Path) -> int:
     if os.name == "nt":
         winsound.PlaySound(str(audio_path), winsound.SND_FILENAME)
         return 0
+    command = player_command()
+    if command is None:
+        return 1
     completed = subprocess.run(
-        (str(MACOS_PLAYER), str(audio_path)),
+        command + (str(audio_path),),
         stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         timeout=20,
         check=False,
-        env={"PATH": "/usr/bin:/bin", "LANG": os.environ.get("LANG", "C.UTF-8")},
+        env=_player_environment(),
     )
     return completed.returncode
 

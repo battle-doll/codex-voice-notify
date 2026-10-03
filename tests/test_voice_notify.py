@@ -252,8 +252,9 @@ class VoiceNotifySetupTests(unittest.TestCase):
                 "Microsoft Windows [Version 10.0.26200.0]"
             )
         )
-        self.assertIsNone(
-            voice_notify_config.parse_codex_version("codex-cli 0.145.0-alpha.1")
+        self.assertEqual(
+            voice_notify_config.parse_codex_version("codex-cli 0.145.0-alpha.1"),
+            (0, 145, 0),
         )
         self.assertIsNone(voice_notify_config.parse_codex_version("unknown"))
 

@@ -5,6 +5,12 @@ umask 077
 LC_ALL=C
 export LC_ALL
 
+if [ "$(uname -s 2>/dev/null)" = Linux ]; then
+    script_directory=$(CDPATH= cd "$(dirname "$0")" 2>/dev/null && pwd -P) || exit 0
+    command -v python3 >/dev/null 2>&1 || exit 0
+    exec python3 "$script_directory/play_notify.py" "$@"
+fi
+
 event_slug() {
     case "$1" in
         SessionStart) printf '%s\n' "session-start" ;;
@@ -129,7 +135,7 @@ event_name=$(
             );
             var eventName = "";
             try {
-                var payload = JSON.parse(text);
+                var payload = input.length <= 1048576 ? JSON.parse(text) : null;
                 if (
                     payload &&
                     typeof payload.hook_event_name === "string"
@@ -219,7 +225,7 @@ fi
 [ -n "$runtime_directory" ] || exit 0
 
 [ "${CODEX_VOICE_NOTIFY_NO_PLAY:-}" = "1" ] && exit 0
-/usr/bin/nohup /bin/sh "$script_directory/play_notify.sh" \
+/usr/bin/env -i PATH=/usr/bin:/bin LC_ALL=C /usr/bin/nohup /bin/sh "$script_directory/play_notify.sh" \
     --play "$audio_path" "$runtime_directory" "$minimum_interval" \
     </dev/null >/dev/null 2>&1 &
 exit 0

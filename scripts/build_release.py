@@ -91,8 +91,16 @@ STRUCTURAL_RELEASE_FILES = frozenset(
         "scripts/voice_notify_config.ps1",
         "scripts/voice_notify_config.py",
         "scripts/voice_notify_config.sh",
+        "scripts/voice_notify_hooks.py",
+        "scripts/voice_notify_hooks.js",
+        "scripts/voice_notify_hooks.ps1",
         "skills/voice-notify-settings/SKILL.md",
+        "skills/voice-notify-settings/references/setup-guides.json",
         "tests/test_voice_notify.py",
+        "tests/test_linux_notify.py",
+        "tests/test_hook_approval.py",
+        "tests/test_codex_integration.py",
+        "tests/test_native_setup.py",
     }
 )
 EXPECTED_AUDIO_FILES = frozenset(
@@ -127,6 +135,12 @@ PRIVATE_PATH_BYTE_PATTERNS = (
     re.compile(
         rb"(?i)[a-z]:[\\/]+" + b"Users" + rb"[\\/]+[^\\/\s\x00]+[\\/]"
     ),
+)
+SECRET_BYTE_PATTERNS = (
+    re.compile(rb"\b" + rb"sk" + rb"-(?:proj-)?[A-Za-z0-9_-]{24,}"),
+    re.compile(rb"\b" + rb"gh" + rb"[opusr]_[A-Za-z0-9]{30,}"),
+    re.compile(rb"-----BEGIN " + rb"(?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
+    re.compile(rb"(?i)\b(?:api[_-]?key|password|token)\s*[:=]\s*['\"]?[A-Za-z0-9+/_=-]{32,}"),
 )
 
 
@@ -235,6 +249,8 @@ def _check_snapshot_limits(snapshot: Mapping[str, bytes]) -> None:
             raise ReleaseBuildError(
                 "Private absolute user path found in release content: %s" % relative
             )
+        if any(pattern.search(payload) is not None for pattern in SECRET_BYTE_PATTERNS):
+            raise ReleaseBuildError("Credential-like content found in release file: %s" % relative)
 
         # Binary assets may still leak paths through metadata. Decode their raw
         # bytes both ways so unmarked UTF-16 paths are caught as well as ASCII.

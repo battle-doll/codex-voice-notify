@@ -25,7 +25,9 @@ MIN_HOOKS_CODEX_VERSION = (0, 145, 0)
 LANGUAGE_CHOICES = tuple(sorted(play_notify.LANGUAGES))
 CODEX_VERSION_PATTERN = re.compile(
     r"(?i)^\s*(?:openai\s+)?codex(?:-cli)?\s+"
-    r"(?:\(\s*)?v?(\d+)\.(\d+)\.(\d+)\s*\)?\s*$"
+    r"(?:\(\s*)?v?(\d+)\.(\d+)\.(\d+)"
+    r"(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?"
+    r"(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?\s*\)?\s*$"
 )
 
 
@@ -55,7 +57,7 @@ def inspect_codex(override: Optional[str] = None) -> Tuple[
             (str(command), "--version"),
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
+            stderr=subprocess.DEVNULL,
             text=True,
             timeout=15,
             check=False,
@@ -73,17 +75,43 @@ def _apple_script_string(value: str) -> str:
 
 
 def open_hook_trust_terminal(command: pathlib.Path, cwd: pathlib.Path) -> bool:
-    if sys.platform != "darwin":
-        return False
-    osascript = pathlib.Path("/usr/bin/osascript")
-    if not osascript.is_file():
-        return False
     shell_command = (
         "printf '\\nVoice Notify opened this new Codex CLI terminal. "
         "Type /hooks here and review the bundled hook.\\n\\n'; "
         "exec %s --no-alt-screen -C %s"
         % (shlex.quote(str(command)), shlex.quote(str(cwd)))
     )
+    if sys.platform.startswith("linux"):
+        if not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
+            return False
+        for executable, arguments in (
+            ("x-terminal-emulator", ("-e",)),
+            ("gnome-terminal", ("--",)),
+            ("konsole", ("-e",)),
+            ("xfce4-terminal", ("-x",)),
+            ("xterm", ("-e",)),
+        ):
+            terminal = shutil.which(executable)
+            if terminal is None:
+                continue
+            try:
+                subprocess.Popen(
+                    (terminal,) + arguments + ("/bin/sh", "-c", shell_command),
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    close_fds=True,
+                    start_new_session=True,
+                )
+            except OSError:
+                continue
+            return True
+        return False
+    if sys.platform != "darwin":
+        return False
+    osascript = pathlib.Path("/usr/bin/osascript")
+    if not osascript.is_file():
+        return False
     apple_script = (
         'tell application "Terminal"\n'
         "activate\n"
@@ -246,12 +274,15 @@ def run_setup(args: argparse.Namespace, settings: dict) -> int:
             )
             return 4
     else:
-        print("Next: run Codex, enter /hooks, and review the Voice Notify hook.")
+        print("Next: run review-hooks, approve the displayed Voice Notify commands, then run approve-hooks with that approval digest. Use /hooks for manual review if the API is unavailable.")
     print("After trust is granted, fully restart Codex before testing lifecycle events.")
     return 0
 
 
 def main() -> int:
+    if len(sys.argv) > 1 and sys.argv[1] in ("doctor", "review-hooks", "approve-hooks"):
+        from voice_notify_hooks import main as run_hooks
+        return run_hooks()
     args = build_parser().parse_args()
     settings = play_notify.load_settings()
 

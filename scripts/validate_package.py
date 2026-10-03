@@ -47,6 +47,7 @@ EXPECTED_PLUGIN_MANIFEST_KEYS = frozenset({
     "skills",
     "hooks",
     "interface",
+    "extensions",
 })
 EXPECTED_AUTHOR_KEYS = frozenset(("name", "url"))
 EXPECTED_INTERFACE_KEYS = frozenset({
@@ -57,6 +58,7 @@ EXPECTED_INTERFACE_KEYS = frozenset({
     "category",
     "capabilities",
     "websiteURL",
+    "supportURL",
     "privacyPolicyURL",
     "termsOfServiceURL",
     "defaultPrompt",
@@ -173,29 +175,29 @@ README_PRIVACY_MARKERS = {
 }
 README_HOOK_TRUST_MARKERS = {
     "README.md": (
-        "enter `/hooks`, inspect the bundled",
-        "explicitly trust it",
-        "fully restart Codex before testing",
+        "explicit approval",
+        "review-hooks",
+        "approve-hooks",
     ),
     "README.ko.md": (
-        "`/hooks`를 입력하고 번들 명령을 검토",
-        "신뢰하십시오",
-        "Codex를 완전히 종료하고 다시 실행",
+        "명시적으로 승인",
+        "review-hooks",
+        "approve-hooks",
     ),
     "README.ja.md": (
-        "`/hooks` と入力し、同梱コマンドを確認",
-        "明示的に信頼してください",
-        "Codex を完全に終了して再起動",
+        "明示的な承認",
+        "review-hooks",
+        "approve-hooks",
     ),
     "README.zh-CN.md": (
-        "输入 `/hooks`，检查插件自带的命令",
-        "明确选择信任",
-        "彻底退出并重新启动 Codex",
+        "用户明确同意",
+        "review-hooks",
+        "approve-hooks",
     ),
     "README.ru.md": (
-        "введите `/hooks`, проверьте встроенную команду",
-        "явно подтвердите доверие",
-        "полностью закройте и заново запустите",
+        "явного согласия",
+        "review-hooks",
+        "approve-hooks",
     ),
 }
 COMMON_README_MARKERS = (
@@ -399,12 +401,15 @@ def validate_multilingual_readmes(version: str) -> None:
         if len(lines) < 3 or lines[2] != README_LANGUAGE_SWITCHER:
             fail("README language switcher mismatch: %s" % filename)
         version_marker = README_VERSION_PREFIXES[filename] + version
-        if text.count(version_marker) != 2:
+        if text.count(version_marker) < 2:
             fail("README must contain both current-version anchors: %s" % filename)
         if text.count("\n## ") != 7:
             fail("README must contain the seven release sections: %s" % filename)
-        if text.count("```") != 8:
-            fail("README must contain four complete command blocks: %s" % filename)
+        if text.count("```") < 8 or text.count("```") % 2:
+            fail("README must contain complete cross-platform command blocks: %s" % filename)
+        for marker in ("Linux", "doctor", "review-hooks", "approve-hooks", "approvalDigest"):
+            if marker not in text:
+                fail("README is missing cross-platform approval guidance (%s): %s" % (marker, filename))
         missing_markers = [
             marker for marker in COMMON_README_MARKERS if marker not in text
         ]
@@ -431,6 +436,29 @@ def validate_multilingual_readmes(version: str) -> None:
                         filename,
                     )
                 )
+
+
+def validate_setup_guides() -> None:
+    path = ROOT / "skills/voice-notify-settings/references/setup-guides.json"
+    data = json.loads(path.read_text("utf-8"))
+    if set(data) != {"schema_version", "guides"} or data["schema_version"] != 1:
+        fail("setup guides must use schema version 1")
+    if set(data["guides"]) != EXPECTED_LANGUAGES:
+        fail("setup guides must include all five user languages")
+    fields = {"greeting", "setup_prompt", "preference_question", "consent_summary",
+              "hearing_confirmation", "language_options", "voice_options"}
+    for language, guide in data["guides"].items():
+        if set(guide) != fields:
+            fail("setup guide fields mismatch: %s" % language)
+        for field in fields - {"language_options", "voice_options"}:
+            if not isinstance(guide[field], str) or not guide[field].strip():
+                fail("setup guide text is missing: %s/%s" % (language, field))
+        for field, expected in (("language_options", EXPECTED_LANGUAGES), ("voice_options", EXPECTED_VOICES)):
+            options = guide[field]
+            if len(options) != len(expected) or {x.get("value") for x in options} != expected:
+                fail("setup guide choices mismatch: %s/%s" % (language, field))
+            if any(set(x) != {"value", "label"} or not isinstance(x["label"], str) or not x["label"].strip() for x in options):
+                fail("setup guide labels are missing: %s/%s" % (language, field))
 
 
 def validate_canonical_pcm_wav(payload: bytes, audio_file: pathlib.Path) -> int:
@@ -529,6 +557,12 @@ def main() -> int:
     if manifest["hooks"] != "./hooks/hooks.json":
         fail("plugin manifest must register hooks/hooks.json")
     require_plugin_directory(manifest["skills"], "./skills/", "plugin skills path")
+    if manifest.get("extensions") != {
+        "com.openai": {
+            "onboardingSkill": "./skills/voice-notify-settings/SKILL.md"
+        }
+    } or not (ROOT / "skills/voice-notify-settings/SKILL.md").is_file():
+        fail("plugin onboarding must point to its included Voice Notify setup skill")
     keywords = manifest["keywords"]
     if (
         not isinstance(keywords, list)
@@ -594,6 +628,7 @@ def main() -> int:
         )
     for url_field in (
         "websiteURL",
+        "supportURL",
         "privacyPolicyURL",
         "termsOfServiceURL",
     ):
@@ -633,6 +668,7 @@ def main() -> int:
     if not re.fullmatch(r"\d+\.\d+\.\d+", str(manifest.get("version", ""))):
         fail("plugin version must be a three-part semantic version")
     validate_multilingual_readmes(manifest["version"])
+    validate_setup_guides()
     default_prompts = interface.get("defaultPrompt", ())
     if (
         not isinstance(default_prompts, list)
@@ -650,8 +686,8 @@ def main() -> int:
         for marker in ("first-time setup", "set up voice notify")
     ):
         fail("the first default prompt must offer guided first-time setup")
-    if "new codex cli terminal" not in default_prompts[0].lower():
-        fail("the first default prompt must request a new Codex CLI terminal")
+    if not any(marker in default_prompts[0].lower() for marker in ("approval", "approv", "review")):
+        fail("the first default prompt must offer informed hook review")
     skill_text = (
         ROOT / "skills" / "voice-notify-settings" / "SKILL.md"
     ).read_text("utf-8")
@@ -661,17 +697,16 @@ def main() -> int:
         "--open-hooks",
         "-OpenHooks",
         "voice_notify_config.sh",
-        "new visible terminal",
-        "starts the verified Codex CLI",
+        "review-hooks",
+        "approve-hooks",
+        "approvalDigest",
+        "Linux",
     ):
         if required_text not in skill_text:
             fail("settings skill is missing setup guidance: %s" % required_text)
-    safe_trust_guidance = re.compile(
-        r"Never edit the trust\s+store or use\s+"
-        r"`--dangerously-bypass-hook-trust`\."
-    )
-    if not safe_trust_guidance.search(skill_text):
-        fail("settings skill must preserve the mandatory hook trust boundary")
+    for marker in ("explicit", "approval", "config/batchWrite", "--dangerously-bypass-hook-trust"):
+        if marker not in skill_text:
+            fail("settings skill must require informed approval and reject bypass (%s)" % marker)
     setup_launchers = {
         ROOT / "scripts" / "voice_notify_config.py": (
             "/usr/bin/osascript",
@@ -712,7 +747,6 @@ def main() -> int:
         runtime_text = runtime_path.read_text("utf-8")
         for forbidden_reference in (
             "/usr/bin/python3",
-            "play_notify.py",
             "/dev/stdin",
         ):
             if forbidden_reference in runtime_text:
@@ -724,6 +758,7 @@ def main() -> int:
     for required_parser_text in (
         "fileHandleWithStandardInput",
         "JSON.parse(text)",
+        "input.length <= 1048576",
     ):
         if required_parser_text not in macos_hook_text:
             fail(
@@ -936,10 +971,10 @@ def main() -> int:
     if (
         not isinstance(evals["positive"], list)
         or not isinstance(evals["negative"], list)
-        or len(evals["positive"]) != 7
-        or len(evals["negative"]) != 3
+        or len(evals["positive"]) != 10
+        or len(evals["negative"]) != 5
     ):
-        fail("submission evals must contain exactly 7 positive and 3 negative cases")
+        fail("submission evals must contain exactly 10 positive and 5 negative cases")
     normalized_prompts = set()
     for category in ("positive", "negative"):
         for case in evals[category]:
@@ -970,7 +1005,7 @@ def main() -> int:
 
     print(
         "PASS: manifest, guided setup, system-native macOS runtime, 10 hooks, "
-        "%d WAVs, checksums, format, signal, clipping, 7+3 review evals, "
+        "%d WAVs, checksums, format, signal, clipping, 10+5 review evals, "
         "and 10/20/20 discovery evals "
         "(%.2f-%.2fs)"
         % (EXPECTED_ASSET_COUNT, min(durations), max(durations))

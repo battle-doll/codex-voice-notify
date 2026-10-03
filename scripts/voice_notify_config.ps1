@@ -1,6 +1,6 @@
 param(
     [Parameter(Position = 0)]
-    [ValidateSet("show", "set", "mute", "unmute", "reset", "test", "setup")]
+    [ValidateSet("show", "set", "mute", "unmute", "reset", "test", "setup", "doctor", "review-hooks", "approve-hooks")]
     [string]$Command = "show",
     [ValidateSet("female", "male")]
     [string]$Voice,
@@ -25,11 +25,19 @@ param(
     [switch]$DryRun,
     [switch]$SkipAudioTest,
     [switch]$OpenHooks,
-    [string]$CodexCommand
+    [string]$CodexCommand,
+    [string]$Approve
 )
 
 $ErrorActionPreference = "Stop"
 $PluginRoot = Split-Path -Parent $PSScriptRoot
+if (@("doctor", "review-hooks", "approve-hooks") -contains $Command) {
+    $HookArguments = @{ Action = $Command; PluginRoot = $PluginRoot }
+    if ($CodexCommand) { $HookArguments.Codex = $CodexCommand }
+    if ($Approve) { $HookArguments.Approve = $Approve }
+    & (Join-Path $PSScriptRoot "voice_notify_hooks.ps1") @HookArguments
+    exit $LASTEXITCODE
+}
 if ($env:CODEX_VOICE_NOTIFY_CONFIG) {
     $ConfigPath = [IO.Path]::GetFullPath($env:CODEX_VOICE_NOTIFY_CONFIG)
     $ConfigDirectory = Split-Path -Parent $ConfigPath
@@ -133,32 +141,121 @@ function Save-Settings($Settings) {
 
 function Get-CodexPath([string]$ExplicitPath) {
     if ($ExplicitPath) {
-        return [IO.Path]::GetFullPath($ExplicitPath)
+        return (Resolve-NativeVersionProbePath ([IO.Path]::GetFullPath($ExplicitPath)))
     }
     if ($env:CODEX_VOICE_NOTIFY_CODEX) {
-        return [IO.Path]::GetFullPath($env:CODEX_VOICE_NOTIFY_CODEX)
+        return (Resolve-NativeVersionProbePath ([IO.Path]::GetFullPath($env:CODEX_VOICE_NOTIFY_CODEX)))
+    }
+    if ($env:CODEX_CLI_PATH -and (Test-Path -LiteralPath $env:CODEX_CLI_PATH -PathType Leaf)) {
+        return (Resolve-NativeVersionProbePath ([IO.Path]::GetFullPath($env:CODEX_CLI_PATH)))
     }
     foreach ($Name in @("codex.cmd", "codex.exe", "codex")) {
         $Candidate = Get-Command $Name -ErrorAction SilentlyContinue | Select-Object -First 1
         if ($null -ne $Candidate) {
-            return $Candidate.Source
+            return (Resolve-NativeVersionProbePath $Candidate.Source)
         }
     }
     return $null
 }
 
-function Get-CodexVersionInfo([string]$CodexPath) {
+function Resolve-NativeVersionProbePath([string]$Path) {
+    # Resolve recognized npm Codex shims from package data, never script text.
+    # Unrecognized wrappers retain the existing compatibility probe below.
+    if (@('.cmd','.bat','.ps1') -notcontains [IO.Path]::GetExtension($Path).ToLowerInvariant() -or
+        [IO.Path]::GetFileNameWithoutExtension($Path).ToLowerInvariant() -ne 'codex') { return $Path }
+    $Architecture = $env:PROCESSOR_ARCHITEW6432
+    if (-not $Architecture) { $Architecture = $env:PROCESSOR_ARCHITECTURE }
+    if (@('ARM64','aarch64') -contains $Architecture) { $Target = 'aarch64-pc-windows-msvc'; $Package = 'codex-win32-arm64' }
+    else { $Target = 'x86_64-pc-windows-msvc'; $Package = 'codex-win32-x64' }
+    $Directory = Split-Path -Parent $Path
+    $Scopes = @((Join-Path $Directory 'node_modules/@openai'))
+    if ([IO.Path]::GetFileName($Directory) -eq '.bin') { $Scopes += (Join-Path (Split-Path -Parent $Directory) '@openai') }
+    foreach ($Scope in $Scopes) {
+        $Main = Join-Path $Scope 'codex'; $ManifestPath = Join-Path $Main 'package.json'
+        try {
+            if ((Get-Item -LiteralPath $ManifestPath).Length -gt 65536) { continue }
+            if (([IO.File]::ReadAllText($ManifestPath) | ConvertFrom-Json).name -cne '@openai/codex') { continue }
+        } catch { continue }
+        foreach ($Root in @((Join-Path $Scope $Package), (Join-Path $Main ('node_modules/@openai/' + $Package)), $Main)) {
+            foreach ($Location in @('bin','codex')) {
+                $NativePath = Join-Path $Root ('vendor/' + $Target + '/' + $Location + '/codex.exe')
+                if (Test-Path -LiteralPath $NativePath -PathType Leaf) { return [IO.Path]::GetFullPath($NativePath) }
+            }
+        }
+    }
+    return $Path
+}
+
+function Invoke-NativeVersionProbe([string]$CodexPath) {
+    $Process = [Diagnostics.Process]::new()
+    $Started = $false
     try {
-        $VersionOutput = (& $CodexPath --version 2>&1 | Out-String).Trim()
+        $Info = [Diagnostics.ProcessStartInfo]::new()
+        $Info.FileName = $CodexPath; $Info.Arguments = '--version'
+        $Info.UseShellExecute = $false; $Info.CreateNoWindow = $true
+        $Info.RedirectStandardInput = $true; $Info.RedirectStandardOutput = $true; $Info.RedirectStandardError = $true
+        $Utf8 = [Text.UTF8Encoding]::new($false, $true)
+        $Info.StandardOutputEncoding = $Utf8; $Info.StandardErrorEncoding = $Utf8
+        [Console]::InputEncoding = [Text.UTF8Encoding]::new($false)
+        $Process.StartInfo = $Info
+        $Watch = [Diagnostics.Stopwatch]::StartNew()
+        $Started = $Process.Start()
+        if (-not $Started) { return $null }
+        $Process.StandardInput.Close()
+        # Drain both streams concurrently; a warning cannot block stdout.
+        $OutputTask = $Process.StandardOutput.ReadToEndAsync()
+        $ErrorTask = $Process.StandardError.ReadToEndAsync()
+        $Remaining = [Math]::Max(0, 20000 - [int]$Watch.ElapsedMilliseconds)
+        if (-not $Process.WaitForExit($Remaining)) { return $null }
+        $Remaining = [Math]::Max(0, 20000 - [int]$Watch.ElapsedMilliseconds)
+        # EOF can be delayed even after the parent exits. It shares the deadline.
+        if (-not [Threading.Tasks.Task]::WaitAll([Threading.Tasks.Task[]]@($OutputTask, $ErrorTask), $Remaining)) { return $null }
+        if ($Process.ExitCode -ne 0) { return $null }
+        $Output = $OutputTask.GetAwaiter().GetResult()
+        if ($Output.Length -gt 65536) { return $null }
+        return $Output.Trim()
+    } catch { return $null }
+    finally {
+        if ($Started) {
+            try {
+                if (-not $Process.HasExited) {
+                    if ($Process.GetType().GetMethod('Kill', [type[]]@([bool]))) { $Process.Kill($true) }
+                    else { $Process.Kill() }
+                    $null = $Process.WaitForExit(1000)
+                }
+            } catch {}
+        }
+        $Process.Dispose()
+    }
+}
+
+function Get-CodexVersionInfo([string]$CodexPath) {
+    if ([IO.Path]::GetExtension($CodexPath).ToLowerInvariant() -eq '.exe') {
+        $VersionOutput = Invoke-NativeVersionProbe $CodexPath
+        if ($null -eq $VersionOutput) { return $null }
+        $VersionExitCode = 0
+    }
+    else {
+    $PreviousErrorActionPreference = $ErrorActionPreference
+    try {
+        # Windows PowerShell 5.1 turns native stderr into error records. Only
+        # this read-only probe tolerates warnings; stdout and exit status still
+        # have to match the Codex version contract.
+        $ErrorActionPreference = 'Continue'
+        $VersionOutput = (& $CodexPath --version 2>$null | Out-String).Trim()
         $VersionExitCode = $LASTEXITCODE
     }
     catch {
         return $null
     }
+    finally {
+        $ErrorActionPreference = $PreviousErrorActionPreference
+    }
+    }
     if ($VersionExitCode -ne 0) {
         return $null
     }
-    if ($VersionOutput -notmatch "(?i)^\s*(?:openai\s+)?codex(?:-cli)?\s+(?:\(\s*)?v?(\d+)\.(\d+)\.(\d+)\s*\)?\s*$") {
+    if ($VersionOutput -notmatch "(?i)^\s*(?:openai\s+)?codex(?:-cli)?\s+(?:\(\s*)?v?(\d+)\.(\d+)\.(\d+)(?:-[0-9a-z]+(?:[.-][0-9a-z]+)*)?(?:\+[0-9a-z]+(?:[.-][0-9a-z]+)*)?\s*\)?\s*$") {
         return $null
     }
     return [pscustomobject]@{
