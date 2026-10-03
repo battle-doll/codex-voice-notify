@@ -7,6 +7,7 @@ param(
     [string]$PluginRoot = (Split-Path -Parent $PSScriptRoot)
 )
 $ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
 $script:PluginName = 'codex-voice-notify'
 $script:HashPattern = '^[0-9a-fA-F]{64}$'
 $script:CurrentHashPattern = '^(?:sha256:)?[0-9a-fA-F]{64}$'
@@ -108,29 +109,36 @@ function Start-LocalServer([string]$Executable, [string]$Cwd) {
     $info.FileName = $Executable; $info.WorkingDirectory = $Cwd
     $info.UseShellExecute = $false; $info.CreateNoWindow = $true
     $info.RedirectStandardInput = $true; $info.RedirectStandardOutput = $true; $info.RedirectStandardError = $true
+    # Codex JSON-RPC is UTF-8. Windows PowerShell 5.1 otherwise uses the console
+    # code page for redirected Process streams, corrupting non-ASCII paths.
+    $utf8 = [Text.UTF8Encoding]::new($false, $true)
+    $info.StandardOutputEncoding = $utf8; $info.StandardErrorEncoding = $utf8
     $arguments = @('app-server', '--listen', 'stdio://', '-c', 'analytics.enabled=false', '-c', 'feedback.enabled=false', '-c', 'otel.exporter="none"', '-c', 'mcp_servers={}')
     if ($info.PSObject.Properties.Name -contains 'ArgumentList') { foreach ($argument in $arguments) { $info.ArgumentList.Add($argument) } }
     else { $info.Arguments = (($arguments | ForEach-Object { Quote-ProcessArgument $_ }) -join ' ') }
     $process = [Diagnostics.Process]::new(); $process.StartInfo = $info
     if (-not $process.Start()) { Stop-HookAction 'Could not start the local Codex app-server.' }
     $process.BeginErrorReadLine() # Discard private stderr; never print or retain it.
-    $server = @{ Process = $process; Id = 0; Pending = $null }
+    $writer = [IO.StreamWriter]::new($process.StandardInput.BaseStream, $utf8, 1024, $true)
+    $writer.AutoFlush = $true
+    $server = @{ Process = $process; Writer = $writer; Id = 0; Pending = $null }
     try {
         $server.InitializeResult = Invoke-LocalRequest $server 'initialize' @{ clientInfo = @{ name = $script:PluginName; version = '0.2.0' }; capabilities = @{ experimentalApi = $true } }
-        $process.StandardInput.WriteLine('{"method":"initialized"}'); $process.StandardInput.Flush()
+        $writer.WriteLine('{"method":"initialized"}')
         return $server
     } catch { Stop-LocalServer $server; throw }
 }
 function Stop-LocalServer($Server) {
     if ($null -eq $Server) { return }
     $process = $Server.Process
+    try { if ($Server.Writer) { $Server.Writer.Dispose() } } catch {}
     try { if (-not $process.HasExited) { $process.Kill(); $null = $process.WaitForExit(2000) } } catch {}
     $process.Dispose()
 }
 function Invoke-LocalRequest($Server, [string]$Method, $Params) {
     $Server.Id++; $identifier = $Server.Id
     $message = @{ id = $identifier; method = $Method; params = $Params } | ConvertTo-Json -Depth 50 -Compress
-    $Server.Process.StandardInput.WriteLine($message); $Server.Process.StandardInput.Flush()
+    $Server.Writer.WriteLine($message)
     $deadline = [DateTime]::UtcNow.AddSeconds(20)
     while ([DateTime]::UtcNow -lt $deadline) {
         if ($null -eq $Server.Pending) { $Server.Pending = $Server.Process.StandardOutput.ReadLineAsync() }

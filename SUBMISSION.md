@@ -15,6 +15,11 @@ been verified.
   says lifecycle-hook ZIPs cannot currently be submitted. Voice Notify uses
   lifecycle hooks, so current public submission is on hold. A valid local ZIP
   does not prove portal acceptance or review eligibility.
+- The same documentation says the selected verified Developer identity sets
+  the public directory publisher name. Keep the intended `battle-doll`
+  attribution; do not upload using a different identity merely because the
+  package's `developerName` contains that handle. The upload was stopped before
+  selecting a ZIP while this attribution requirement remained unresolved.
 
 ## Prepared update package
 

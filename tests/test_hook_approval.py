@@ -13,6 +13,8 @@ import tempfile
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+PWSH = shutil.which("pwsh")
+WINDOWS_POWERSHELL = (shutil.which("powershell.exe") or shutil.which("powershell")) if os.name == "nt" else None
 SPEC = importlib.util.spec_from_file_location("voice_notify_hooks", ROOT / "scripts/voice_notify_hooks.py")
 assert SPEC and SPEC.loader
 hooks = importlib.util.module_from_spec(SPEC)
@@ -44,7 +46,7 @@ class HookApprovalTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="voice-hook-test-")
         self.addCleanup(self.temp.cleanup)
-        self.root = pathlib.Path(self.temp.name) / "private-user" / "plugin"
+        self.root = pathlib.Path(self.temp.name) / "private-user-한글" / "plugin"
         (self.root / "hooks").mkdir(parents=True)
         (self.root / ".codex-plugin").mkdir()
         self.root = self.root.resolve()
@@ -146,7 +148,10 @@ for line in sys.stdin:
     if "id" not in message: continue
     method=message["method"]
     if method=="initialize": result={"userAgent":"fake-local"}
-    elif method=="hooks/list": result=listing
+    elif method=="hooks/list":
+        if not os.path.samefile(message["params"]["cwds"][0],listing["data"][0]["cwd"]):
+            raise RuntimeError("The UTF-8 cwd changed during transport")
+        result=listing
     elif method=="config/batchWrite":
         json.dump(message["params"],open(os.environ["VOICE_FAKE_WRITES"],"w"))
         state=message["params"]["edits"][0]["value"]
@@ -154,9 +159,9 @@ for line in sys.stdin:
             if hook["key"] in state: hook.update(enabled=True,trustStatus="trusted")
         result={"status":"ok"}
     else: raise RuntimeError("Unexpected API method")
-    print(json.dumps({"id":message["id"],"result":result}),flush=True)
+    print(json.dumps({"id":message["id"],"result":result},ensure_ascii=False),flush=True)
 ''')
-        return fake,writes,{**os.environ,"VOICE_FAKE_LISTING":str(listing),"VOICE_FAKE_WRITES":str(writes)}
+        return fake,writes,{**os.environ,"PYTHONIOENCODING":"utf-8","VOICE_FAKE_LISTING":str(listing),"VOICE_FAKE_WRITES":str(writes)}
 
     def test_python_stdio_wire_and_config_override_scope(self):
         fake,writes,environment=self.make_fake_executable()
@@ -196,7 +201,7 @@ for line in sys.stdin:
                     current=native.parents[4]/"codex-win32-x64/vendor/x86_64-pc-windows-msvc/bin/codex.exe"
                     if current.is_file(): current.unlink()
                 resolved=hooks.resolve_codex_executable(shim,architecture)
-                self.assertEqual(resolved,str(native.resolve()))
+                self.assertTrue(os.path.samefile(resolved,native))
                 self.assertFalse(marker.exists())
 
     def test_windows_shell_shim_without_official_native_codex_fails_closed(self):
@@ -209,8 +214,7 @@ for line in sys.stdin:
         with self.assertRaisesRegex(hooks.HookError,"shell wrapper"):
             hooks.resolve_codex_executable(unrelated,"x64")
 
-    @unittest.skipUnless(shutil.which("pwsh"),"PowerShell runtime unavailable")
-    def test_powershell_resolves_npm_native_executable_without_invoking_cmd(self):
+    def check_powershell_npm_resolver(self, engine):
         shim,native,marker=self.make_npm_shim()
         runner=pathlib.Path(self.temp.name)/"resolve-native.ps1"
         runner.write_text('''param([string]$Helper,[string]$Shim)
@@ -225,10 +229,19 @@ foreach($name in @('Stop-HookAction','Get-CanonicalPath','Resolve-CodexExecutabl
 $env:PROCESSOR_ARCHITECTURE='AMD64'; $env:PROCESSOR_ARCHITEW6432=''
 Resolve-CodexExecutable $Shim
 ''')
-        result=subprocess.run([shutil.which("pwsh"),"-NoProfile","-File",str(runner),"-Helper",str(ROOT/"scripts/voice_notify_hooks.ps1"),"-Shim",str(shim)],capture_output=True,text=True,timeout=10)
+        result=subprocess.run([engine,"-NoProfile","-ExecutionPolicy","Bypass","-File",str(runner),"-Helper",str(ROOT/"scripts/voice_notify_hooks.ps1"),"-Shim",str(shim)],capture_output=True,text=True,timeout=10)
         self.assertEqual(result.returncode,0,result.stderr)
-        self.assertEqual(pathlib.Path(result.stdout.strip()),native)
+        # Windows may return the physical long name for an 8.3 TEMP alias.
+        self.assertTrue(os.path.samefile(result.stdout.strip(),native))
         self.assertFalse(marker.exists())
+
+    @unittest.skipUnless(PWSH,"PowerShell 7 runtime unavailable")
+    def test_powershell_resolves_npm_native_executable_without_invoking_cmd(self):
+        self.check_powershell_npm_resolver(PWSH)
+
+    @unittest.skipUnless(WINDOWS_POWERSHELL,"Windows PowerShell 5.1 runtime unavailable")
+    def test_windows_powershell51_resolves_npm_native_executable_without_invoking_cmd(self):
+        self.check_powershell_npm_resolver(WINDOWS_POWERSHELL)
 
     @unittest.skipUnless(sys.platform=="darwin" and pathlib.Path("/usr/bin/osascript").exists(),"native macOS JXA required")
     def test_native_macos_review_digest_matches_python_and_approval_is_scoped(self):
@@ -245,19 +258,32 @@ Resolve-CodexExecutable $Shim
         self.assertTrue(json.loads(result.stdout)["trusted"])
         self.assertEqual(set(json.loads(writes.read_text())["edits"][0]["value"]),{self.own["key"]})
 
-    @unittest.skipUnless(shutil.which("pwsh"),"PowerShell runtime unavailable")
-    def test_native_powershell_review_and_approval_are_scoped(self):
+    def check_powershell_review_and_approval(self, engine):
+        # Include Unicode in the public review too: Windows PowerShell 5.1 must
+        # emit UTF-8 JSON, independently of the user's console code page.
+        self.doc["hooks"]["Stop"][0]["hooks"][0]["command"] += " # 알림"
+        (self.root/"hooks/hooks.json").write_text(json.dumps(self.doc,ensure_ascii=False),encoding="utf-8")
+        self.own["command"] += " # 알림"
         fake,writes,environment=self.make_fake_executable()
-        base=[shutil.which("pwsh"),"-NoProfile","-File",str(ROOT / "scripts/voice_notify_hooks.ps1")]
+        base=[engine,"-NoProfile","-ExecutionPolicy","Bypass","-File",str(ROOT / "scripts/voice_notify_hooks.ps1")]
         options=["-PluginRoot",str(self.root),"-Codex",str(fake)]
-        review=subprocess.run(base+["-Action","review-hooks"]+options,cwd=self.root,env=environment,capture_output=True,text=True,timeout=25)
+        review=subprocess.run(base+["-Action","review-hooks"]+options,cwd=self.root,env=environment,capture_output=True,text=True,encoding="utf-8",timeout=25)
         self.assertEqual(review.returncode,0,review.stderr)
         digest=json.loads(review.stdout)["approvalDigest"]
+        self.assertIn("알림",json.loads(review.stdout)["hooks"][0]["command"])
         self.assertFalse(writes.exists())
-        result=subprocess.run(base+["-Action","approve-hooks","-Approve",digest]+options,cwd=self.root,env=environment,capture_output=True,text=True,timeout=25)
+        result=subprocess.run(base+["-Action","approve-hooks","-Approve",digest]+options,cwd=self.root,env=environment,capture_output=True,text=True,encoding="utf-8",timeout=25)
         self.assertEqual(result.returncode,0,result.stderr)
         self.assertTrue(json.loads(result.stdout)["trusted"])
         self.assertEqual(set(json.loads(writes.read_text())["edits"][0]["value"]),{self.own["key"]})
+
+    @unittest.skipUnless(PWSH,"PowerShell 7 runtime unavailable")
+    def test_native_powershell_review_and_approval_are_scoped(self):
+        self.check_powershell_review_and_approval(PWSH)
+
+    @unittest.skipUnless(WINDOWS_POWERSHELL,"Windows PowerShell 5.1 runtime unavailable")
+    def test_native_windows_powershell51_review_and_approval_are_scoped(self):
+        self.check_powershell_review_and_approval(WINDOWS_POWERSHELL)
 
 
 if __name__ == "__main__": unittest.main()
