@@ -14,6 +14,7 @@ jobs:
         os:
           - macos-latest
           - windows-latest
+          - ubuntu-latest
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -47,7 +48,7 @@ jobs:
           /bin/sh -n "$SETTINGS_SCRIPT"
           /bin/sh -n "$HOOK_SCRIPT"
           FAKE_CODEX="$RUNNER_TEMP/codex"
-          printf '#!/bin/sh\necho "codex-cli 0.145.0"\n' > "$FAKE_CODEX"
+          printf '#!/bin/sh\necho "codex-cli 0.159.0-alpha.12.1"\n' > "$FAKE_CODEX"
           chmod +x "$FAKE_CODEX"
 
           REJECTED_CONFIG="$RUNNER_TEMP/rejected-settings.json"
@@ -101,7 +102,7 @@ jobs:
           $SkillDir = Join-Path (Get-Location).Path "skills\voice-notify-settings"
           $PluginRoot = [IO.Path]::GetFullPath((Join-Path $SkillDir "..\.."))
           $FakeCodex = Join-Path $env:RUNNER_TEMP "codex.cmd"
-          Set-Content -LiteralPath $FakeCodex -Encoding ASCII -Value '@echo codex-cli 0.145.0'
+          Set-Content -LiteralPath $FakeCodex -Encoding ASCII -Value '@echo codex-cli 0.159.0-alpha.12.1'
           $RejectedConfig = Join-Path $env:RUNNER_TEMP "rejected-settings.json"
           $env:CODEX_VOICE_NOTIFY_CONFIG = $RejectedConfig
           powershell.exe -NoProfile -ExecutionPolicy Bypass `
@@ -110,6 +111,7 @@ jobs:
           if ($LASTEXITCODE -ne 3 -or (Test-Path -LiteralPath $RejectedConfig)) {
             throw "Rejected Codex executables must return 3 without saving settings."
           }
+
           $env:CODEX_VOICE_NOTIFY_CONFIG = Join-Path $env:RUNNER_TEMP "settings.json"
           $Settings = & "$PluginRoot\scripts\voice_notify_config.ps1" show | ConvertFrom-Json
           if ($Settings.events.PreToolUse -ne $false -or
@@ -155,6 +157,24 @@ jobs:
             }
           }
 
+      - name: Linux first-time setup smoke test
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          SETTINGS_SCRIPT="$PWD/scripts/voice_notify_config.sh"
+          HOOK_SCRIPT="$PWD/hooks/play_notify.sh"
+          FAKE_CODEX="$RUNNER_TEMP/codex"
+          printf '#!/bin/sh\necho "codex-cli 0.159.0-alpha.12.1"\n' > "$FAKE_CODEX"
+          chmod +x "$FAKE_CODEX"
+          export CODEX_VOICE_NOTIFY_CONFIG="$RUNNER_TEMP/settings.json"
+          /bin/sh "$SETTINGS_SCRIPT" setup --voice female --language ko \
+            --codex-command "$FAKE_CODEX" --skip-audio-test
+          /bin/sh "$SETTINGS_SCRIPT" show
+          /bin/sh "$SETTINGS_SCRIPT" test --event Stop --dry-run
+          export CODEX_VOICE_NOTIFY_NO_PLAY=1
+          printf '%s' '{"hook_event_name":"Stop","prompt":"PRIVATE_SENTINEL"}' | /bin/sh "$HOOK_SCRIPT"
+
   compare-release-digests:
     name: compare release digests
     needs: validate
@@ -164,15 +184,17 @@ jobs:
         with:
           pattern: release-digest-*
           path: release-digests
-      - name: Require identical macOS and Windows ZIP digests
+      - name: Require identical macOS, Windows, and Linux ZIP digests
         shell: bash
         run: |
           set -euo pipefail
           MACOS_DIGEST="$(tr -d '\r\n' < release-digests/release-digest-macos-latest/release-sha256.txt)"
           WINDOWS_DIGEST="$(tr -d '\r\n' < release-digests/release-digest-windows-latest/release-sha256.txt)"
+          LINUX_DIGEST="$(tr -d '\r\n' < release-digests/release-digest-ubuntu-latest/release-sha256.txt)"
           [[ "$MACOS_DIGEST" =~ ^[0-9a-f]{64}$ ]]
           [[ "$WINDOWS_DIGEST" =~ ^[0-9a-f]{64}$ ]]
-          if [[ "$MACOS_DIGEST" != "$WINDOWS_DIGEST" ]]; then
+          [[ "$LINUX_DIGEST" =~ ^[0-9a-f]{64}$ ]]
+          if [[ "$MACOS_DIGEST" != "$WINDOWS_DIGEST" || "$MACOS_DIGEST" != "$LINUX_DIGEST" ]]; then
             echo "macOS ZIP SHA-256: $MACOS_DIGEST" >&2
             echo "Windows ZIP SHA-256: $WINDOWS_DIGEST" >&2
             exit 1

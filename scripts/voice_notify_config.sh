@@ -1,5 +1,5 @@
 #!/bin/sh
-# Configure and test Voice Notify on macOS without Python or developer tools.
+# Configure Voice Notify on macOS natively, or Linux with Python's standard library.
 
 umask 077
 LC_ALL=C
@@ -11,6 +11,30 @@ script_directory=$(
 plugin_root=$(
     CDPATH= cd "$script_directory/.." 2>/dev/null && pwd -P
 ) || exit 1
+
+# Preserve the native macOS path. Linux uses only Python's standard library.
+case "$(uname -s 2>/dev/null)" in
+    Linux)
+        command -v python3 >/dev/null 2>&1 || {
+            printf '%s\n' "Python 3 is required on Linux. Install it with your system package manager." >&2
+            exit 3
+        }
+        case "${1:-show}" in
+            doctor|review-hooks|approve-hooks)
+                exec python3 "$script_directory/voice_notify_hooks.py" "$@"
+                ;;
+            *) exec python3 "$script_directory/voice_notify_config.py" "$@" ;;
+        esac
+        ;;
+    Darwin) ;;
+    *) printf '%s\n' "This entry point supports macOS and Linux." >&2; exit 3 ;;
+esac
+
+case "${1:-show}" in
+    doctor|review-hooks|approve-hooks)
+        exec /usr/bin/osascript -l JavaScript "$script_directory/voice_notify_hooks.js" "$@"
+        ;;
+esac
 config_path=${CODEX_VOICE_NOTIFY_CONFIG:-"${HOME:-}/.config/codex-voice-notify/settings.json"}
 config_directory=$(/usr/bin/dirname "$config_path")
 minimum_hooks_version="0.145.0"
@@ -221,6 +245,14 @@ find_codex_command() {
         printf '%s\n' "$CODEX_VOICE_NOTIFY_CODEX"
         return
     fi
+    for bundled_codex in \
+        /Applications/Codex.app/Contents/Resources/codex \
+        /Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex; do
+        if [ -x "$bundled_codex" ]; then
+            printf '%s\n' "$bundled_codex"
+            return
+        fi
+    done
     command -v codex 2>/dev/null
 }
 
@@ -248,7 +280,7 @@ inspect_codex() {
         printf '%s' "$codex_output" |
             /usr/bin/tr '[:upper:]' '[:lower:]' |
             /usr/bin/sed -nE \
-                's/^[[:space:]]*(openai[[:space:]]+)?codex(-cli)?[[:space:]]+\(?v?([0-9]+)\.([0-9]+)\.([0-9]+)\)?[[:space:]]*$/\3 \4 \5/p'
+                's/^[[:space:]]*(openai[[:space:]]+)?codex(-cli)?[[:space:]]+\(?v?([0-9]+)\.([0-9]+)\.([0-9]+)(-[0-9a-z]+([.-][0-9a-z]+)*)?(\+[0-9a-z]+([.-][0-9a-z]+)*)?\)?[[:space:]]*$/\3 \4 \5/p'
     )
     set -- $version_parts
     if [ "$#" -ne 3 ]; then
@@ -441,7 +473,7 @@ case "$command_name" in
                 exit 4
             fi
         else
-            printf '%s\n' "Next: run Codex, enter /hooks, and review the Voice Notify hook."
+            printf '%s\n' "Next: run review-hooks, approve the displayed Voice Notify commands, then run approve-hooks with that approval digest. Use /hooks for manual review if the API is unavailable."
         fi
         printf '%s\n' \
             "After trust is granted, fully restart Codex before testing lifecycle events."

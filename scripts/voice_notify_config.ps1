@@ -1,6 +1,6 @@
 param(
     [Parameter(Position = 0)]
-    [ValidateSet("show", "set", "mute", "unmute", "reset", "test", "setup")]
+    [ValidateSet("show", "set", "mute", "unmute", "reset", "test", "setup", "doctor", "review-hooks", "approve-hooks")]
     [string]$Command = "show",
     [ValidateSet("female", "male")]
     [string]$Voice,
@@ -25,11 +25,19 @@ param(
     [switch]$DryRun,
     [switch]$SkipAudioTest,
     [switch]$OpenHooks,
-    [string]$CodexCommand
+    [string]$CodexCommand,
+    [string]$Approve
 )
 
 $ErrorActionPreference = "Stop"
 $PluginRoot = Split-Path -Parent $PSScriptRoot
+if (@("doctor", "review-hooks", "approve-hooks") -contains $Command) {
+    $HookArguments = @{ Action = $Command; PluginRoot = $PluginRoot }
+    if ($CodexCommand) { $HookArguments.Codex = $CodexCommand }
+    if ($Approve) { $HookArguments.Approve = $Approve }
+    & (Join-Path $PSScriptRoot "voice_notify_hooks.ps1") @HookArguments
+    exit $LASTEXITCODE
+}
 if ($env:CODEX_VOICE_NOTIFY_CONFIG) {
     $ConfigPath = [IO.Path]::GetFullPath($env:CODEX_VOICE_NOTIFY_CONFIG)
     $ConfigDirectory = Split-Path -Parent $ConfigPath
@@ -138,6 +146,9 @@ function Get-CodexPath([string]$ExplicitPath) {
     if ($env:CODEX_VOICE_NOTIFY_CODEX) {
         return [IO.Path]::GetFullPath($env:CODEX_VOICE_NOTIFY_CODEX)
     }
+    if ($env:CODEX_CLI_PATH -and (Test-Path -LiteralPath $env:CODEX_CLI_PATH -PathType Leaf)) {
+        return [IO.Path]::GetFullPath($env:CODEX_CLI_PATH)
+    }
     foreach ($Name in @("codex.cmd", "codex.exe", "codex")) {
         $Candidate = Get-Command $Name -ErrorAction SilentlyContinue | Select-Object -First 1
         if ($null -ne $Candidate) {
@@ -158,7 +169,7 @@ function Get-CodexVersionInfo([string]$CodexPath) {
     if ($VersionExitCode -ne 0) {
         return $null
     }
-    if ($VersionOutput -notmatch "(?i)^\s*(?:openai\s+)?codex(?:-cli)?\s+(?:\(\s*)?v?(\d+)\.(\d+)\.(\d+)\s*\)?\s*$") {
+    if ($VersionOutput -notmatch "(?i)^\s*(?:openai\s+)?codex(?:-cli)?\s+(?:\(\s*)?v?(\d+)\.(\d+)\.(\d+)(?:-[0-9a-z]+(?:[.-][0-9a-z]+)*)?(?:\+[0-9a-z]+(?:[.-][0-9a-z]+)*)?\s*\)?\s*$") {
         return $null
     }
     return [pscustomobject]@{

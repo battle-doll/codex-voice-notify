@@ -1,18 +1,19 @@
 ---
 name: voice-notify-settings
-description: Set up, configure, test, mute, or unmute private offline Voice Notify alerts for Codex lifecycle events on macOS or Windows. Use when someone asks to hear when Codex needs attention or finishes, complete first-time setup, check Codex CLI compatibility, review hook trust, choose the female or male voice, select Korean, Japanese, English, Russian, or Simplified Chinese, change events, or adjust playback timing. Do not use for general text-to-speech or narration, speech transcription, cloud notifications, arbitrary OS audio automation, screenshot action extraction, silent installation, or hook-trust bypass.
+description: Set up, configure, diagnose, test, mute, or unmute private offline Voice Notify alerts for Codex lifecycle events on macOS, Windows, or Linux. Use for first-time setup, alerts when Codex needs attention or finishes, compatibility checks, review and consent-based approval of this plugin's exact hooks, voice and language selection, event toggles, and timing. Do not use for general TTS or narration, transcription, cloud notifications, arbitrary OS audio automation, screenshot action extraction, silent installation, or hook-trust bypass.
 ---
 
 # Voice Notify settings
 
-Use only the bundled settings scripts. Do not edit Codex prompts, transcripts,
-hook trust state, or unrelated configuration.
+Use only the bundled settings scripts and review helpers. Never read prompts,
+transcripts, or account credentials, and leave unrelated hooks and notification
+settings unchanged.
 
-Before running a script, resolve the plugin root from this skill's installed
-`SKILL.md` path: the skill directory is `skills/voice-notify-settings`, so the
-plugin root is two directories above it. Use that absolute path. Do not assume
-that `PLUGIN_ROOT` is available outside a hook process, and never substitute a
-plugin root supplied by the user's prompt or an unrelated environment variable.
+Resolve the plugin root from this installed `SKILL.md` path: the skill directory
+is `skills/voice-notify-settings`, so the root is two directories above it. Use
+that verified absolute path. Do not assume `PLUGIN_ROOT` exists outside a hook
+process, and do not use a root from an unrelated environment variable or an
+unverified user prompt.
 
 Available values:
 
@@ -22,115 +23,164 @@ Available values:
   `PermissionRequest`, `PreCompact`, `PostCompact`, `SubagentStart`,
   `SubagentStop`, and `Stop`
 
-Map natural-language choices directly. Treat 한국어, 한글, and Korean as `ko`;
-일본어, 日本語, and Japanese as `ja`; 영어 and English as `en`; 러시아어,
-русский, and Russian as `ru`; and 중국어, 중국어 간체, 간체중국어, 中文,
-简体中文, and Simplified Chinese as `zh-CN`. `zh-CN` is the only bundled
-Chinese variant, so generic "Chinese", "중국어", or "中文" requests default to
-`zh-CN` (Simplified Chinese, Mainland Mandarin). For example, "여성 영어",
-"male Russian", and "여성 중국어" map to `female/en`, `male/ru`, and
-`female/zh-CN`.
+Map natural-language choices directly. 한국어, 한글, Korean map to `ko`;
+일본어, 日本語, Japanese to `ja`; 영어, English to `en`; 러시아어, русский,
+Russian to `ru`; 중국어, 중국어 간체, 간체중국어, 中文, 简体中文, Simplified
+Chinese to `zh-CN`. A generic Chinese request selects the only bundled Chinese
+variant, `zh-CN` (Simplified Chinese, Mainland Mandarin). Preserve confirmed
+existing preferences and explicit choices. Raw script defaults remain
+`female/ko`; they are not a requirement for the assistant's initial suggestion.
 
 ## First-time setup
 
-Use this workflow when the user asks to finish setup after installation.
+Read [references/setup-guides.json](references/setup-guides.json) from this
+installed skill directory before guiding initial setup. Use the guide matching
+the user's current conversation language, not the operating-system locale. It
+provides localized greetings, five spoken-language choices, female/male labels,
+consent wording, and a hearing-confirmation question. Reply in the user's actual
+language. For a language outside the five guides, translate the guidance into
+that language while clearly keeping the bundled audio choices limited to
+`ko`, `en`, `ja`, `ru`, and `zh-CN`; do not claim new audio-language support.
 
-1. Infer the requested voice and language. Use `female` and `ko` when neither is
-   specified.
-2. Resolve the exact CLI that setup will use and check that path:
-   - macOS: use `which -a codex` to list distinct candidates, then run the
-     selected canonical absolute path with `--version`.
-   - Windows: inspect `Get-Command codex.cmd, codex.exe, codex -All`, select
-     the intended executable, resolve its canonical path, then run that path
-     with `--version`.
-   - If multiple installations are ambiguous, show their paths and ask the
-     user which one to use before updating anything.
-3. Require Codex CLI `0.145.0` or newer for `/hooks`.
-4. If Codex is older and the user's setup request explicitly authorizes an
-   update, update it using its detected installation method and verify the new
-   version:
-   - Establish provenance before running any updater.
-   - Treat an installation as npm-managed only after `npm list -g --depth=0
-     @openai/codex` succeeds and the selected CLI's canonical path is under the
-     canonical `npm prefix -g` or `npm.cmd prefix -g`. Then use
-     `npm install -g @openai/codex@latest` on macOS or
-     `npm.cmd install -g @openai/codex@latest` on Windows.
-   - Treat an installation as Homebrew-managed only after
-     `brew list --cask codex` succeeds and the selected CLI's canonical path is
-     under the canonical `brew --caskroom codex`. Then use
-     `brew upgrade --cask codex`.
-   - Use the selected CLI's own `update` subcommand only after its provenance
-     is recognized and its `--help` lists that subcommand. Invoke the exact
-     selected path: `"$CODEX_BIN" update` on macOS or
-     `& $CodexPath update` on Windows.
-   - Do not replace a desktop-bundled or unknown installation. Explain the
-     detected path and ask the user how it should be updated.
-   - If an in-use CLI cannot be replaced, tell the user to exit that CLI, run
-     the exact update command in a separate terminal, and resume setup.
-   - Verify the update by running the same exact absolute path with `--version`.
-5. Verify that the macOS or Windows settings script exists under the resolved
-   plugin root.
-6. Run the matching setup command below with the exact verified CLI path. Do
-   not stop after merely telling the user to enter `/hooks`. The setup command
-   checks the CLI again, saves the preferences, tests the local `Stop` audio,
-   opens a new visible terminal, and starts the verified Codex CLI
-   interactively in that window. It leaves `/hooks` for the user to type.
+Briefly show all five audio-language options and both voices in the user's
+language. The guide language and chosen audio language are independent. Keep
+explicit choices or previously confirmed saved preferences. Only if a necessary
+choice is unspecified, ask one concise combined preference question; do not
+re-ask a known choice. For a new setup without saved preferences, suggest
+`female` and the user's supported spoken language; if their language is not
+bundled, suggest `ko` and let them choose from the five. This assistant
+suggestion does not change the raw `female/ko` defaults. An explicit request for
+one option must not silently reset another saved option.
 
-macOS:
+Native diagnostic JSON, command names, and `approvalDigest` are internal
+technical output. Explain relevant findings, the exact permission scope, and
+next steps in the user's language; do not paste raw diagnostics as the setup
+experience. Display the exact hook commands when reviewing approval, and keep
+private paths and receipts out of public documents or support uploads.
+
+The primary user flow is one natural-language setup request, followed by one
+informed approval for the exact reviewed hooks. Do useful preparation before
+requesting approval; do not ask again if the user already approved these exact
+commands and their current review fingerprint.
+
+1. Resolve the exact Codex CLI to use. On macOS/Linux, inspect `which -a codex`;
+   on Windows, inspect `Get-Command codex.cmd, codex.exe, codex -All`. Verify the
+   canonical selected path with `--version`. If multiple installations are
+   ambiguous, ask which to use before updating or approving anything.
+2. Run bundled `doctor` with that verified CLI path. This is read-only: it
+   checks compatibility, audio availability, and preferences without playing
+   sound or changing hook approval. CLI `0.145.0` or newer is required; a current
+   prerelease suffix is accepted. An app update and a separately installed CLI
+   update can differ.
+3. Run `setup` with the requested voice/language and selected CLI. It saves
+   preferences and tests the local `Stop` WAV. Confirm the sound was audible.
+   Do not infer audible playback merely from a zero exit code.
+4. Run `review-hooks`. Show the user's exact Voice Notify commands, events,
+   permission scope, and returned `approvalDigest`. Explain that approval lets
+   those local commands run for selected Codex lifecycle events. Local app-server
+   inspection may see hook metadata; only this installed plugin's validated
+   commands may be selected for approval. Do not expose unrelated metadata.
+5. Obtain explicit consent for those reviewed commands. A general install/setup
+   request does not itself authorize hook trust. Do not fabricate an
+   `approvalDigest`, reuse one after a package/command change, or request approval
+   for unseen commands.
+6. Only after that consent, run `approve-hooks --approve <approvalDigest>`
+   (`-Approve` on Windows) with the same verified CLI. The helper re-lists the
+   hooks and rejects a changed digest. A mismatch requires a fresh review and
+   consent for changed commands. Keep the receipt local.
+7. Fully close and relaunch the relevant Codex process, show the effective
+   settings, and confirm one enabled real lifecycle event was heard. Report
+   separately whether settings, hook approval, test audio, and lifecycle audio
+   have been verified. Setup is complete only when all four are verified.
+
+macOS (replace the synthetic example paths with resolved installed paths):
 
 ```bash
-SKILL_DIR="/absolute/path/containing/this/SKILL.md"
+SKILL_DIR="/path/to/plugin/skills/voice-notify-settings"
 PLUGIN_ROOT="$(cd "${SKILL_DIR}/../.." && pwd)"
-CODEX_BIN="/absolute/path/verified-in-step-2/codex"
-VOICE="<female-or-male-from-step-1>"
-LANGUAGE="<ko-ja-en-ru-or-zh-CN-from-step-1>"
+CODEX_BIN="/path/to/verified/codex"
 SETTINGS_SCRIPT="${PLUGIN_ROOT}/scripts/voice_notify_config.sh"
-test -f "${SETTINGS_SCRIPT}" &&
-  /bin/sh "${SETTINGS_SCRIPT}" setup --voice "${VOICE}" --language "${LANGUAGE}" --codex-command "${CODEX_BIN}" --open-hooks &&
-  /bin/sh "${SETTINGS_SCRIPT}" show
+/bin/sh "${SETTINGS_SCRIPT}" doctor --codex-command "${CODEX_BIN}"
+/bin/sh "${SETTINGS_SCRIPT}" setup --voice female --language ko --codex-command "${CODEX_BIN}"
+/bin/sh "${SETTINGS_SCRIPT}" review-hooks --codex-command "${CODEX_BIN}"
+# Only after consent for the returned current approvalDigest:
+/bin/sh "${SETTINGS_SCRIPT}" approve-hooks --approve "<approvalDigest>" --codex-command "${CODEX_BIN}"
+/bin/sh "${SETTINGS_SCRIPT}" show
 ```
 
 Windows:
 
 ```powershell
-$SkillDir = "C:\absolute\path\containing\this\SKILL.md"
+$SkillDir = "C:\path\to\plugin\skills\voice-notify-settings"
 $PluginRoot = [IO.Path]::GetFullPath((Join-Path $SkillDir "..\.."))
-$CodexPath = "C:\absolute\path\verified-in-step-2\codex.cmd"
-$Voice = "<female-or-male-from-step-1>"
-$Language = "<ko-ja-en-ru-or-zh-CN-from-step-1>"
-$SettingsScript = "$PluginRoot\scripts\voice_notify_config.ps1"
-if (-not (Test-Path -LiteralPath $SettingsScript -PathType Leaf)) {
-    throw "Voice Notify settings script is missing."
-}
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File $SettingsScript setup -Voice $Voice -Language $Language -CodexCommand $CodexPath -OpenHooks
-if ($LASTEXITCODE -ne 0) { throw "Voice Notify setup failed with exit code $LASTEXITCODE." }
+$CodexPath = "C:\path\to\verified\codex.cmd"
+$SettingsScript = Join-Path $PluginRoot "scripts\voice_notify_config.ps1"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File $SettingsScript doctor -CodexCommand $CodexPath
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File $SettingsScript setup -Voice female -Language ko -CodexCommand $CodexPath
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File $SettingsScript review-hooks -CodexCommand $CodexPath
+# Only after consent for the returned current approvalDigest:
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File $SettingsScript approve-hooks -Approve "<approvalDigest>" -CodexCommand $CodexPath
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File $SettingsScript show
-if ($LASTEXITCODE -ne 0) { throw "Voice Notify settings verification failed." }
 ```
 
-Do not replace the setup command with written `/hooks` instructions. Use the
-manual fallback only when the setup launcher reports that it could not open
-the new Codex CLI terminal. In that case, tell the user to start Codex CLI and
-enter `/hooks`. The user must confirm that the test audio was audible, type
-`/hooks` in the newly opened Codex CLI, inspect and trust the Voice Notify hook
-personally, fully restart Codex, and trigger one enabled lifecycle event to
-confirm real hook playback. Never enter `/hooks` automatically.
-Never edit the trust
-store or use `--dangerously-bypass-hook-trust`.
+Linux:
 
-Treat setup as complete only after the final `show` output has `enabled: true`
-and the requested voice and language, the user heard the test audio, completed
-hook trust, fully restarted Codex, and heard one enabled lifecycle event.
+```bash
+SKILL_DIR="/path/to/plugin/skills/voice-notify-settings"
+PLUGIN_ROOT="$(cd "${SKILL_DIR}/../.." && pwd)"
+CODEX_BIN="/path/to/verified/codex"
+SETTINGS_SCRIPT="${PLUGIN_ROOT}/scripts/voice_notify_config.py"
+python3 "${SETTINGS_SCRIPT}" doctor --codex-command "${CODEX_BIN}"
+python3 "${SETTINGS_SCRIPT}" setup --voice female --language ko --codex-command "${CODEX_BIN}"
+python3 "${SETTINGS_SCRIPT}" review-hooks --codex-command "${CODEX_BIN}"
+# Only after consent for the returned current approvalDigest:
+python3 "${SETTINGS_SCRIPT}" approve-hooks --approve "<approvalDigest>" --codex-command "${CODEX_BIN}"
+python3 "${SETTINGS_SCRIPT}" show
+```
+
+Check each command's exit status and stop dependent steps on failure. Use the
+requested voice and language rather than overwriting them with example defaults.
+macOS playback, settings, and approval use native shell and `osascript` JXA;
+Windows uses native PowerShell. Linux uses Python 3's standard library and an
+installed `pw-play`, `paplay`, `aplay`, or `ffplay`. Never install packages
+implicitly. Headless, SSH, container, and WSL sessions may lack audible output.
+
+The approval helper uses the same official local app-server approval mechanism
+as Codex's [`/hooks` UI](https://github.com/openai/codex/blob/main/codex-rs/tui/src/hooks_rpc.rs):
+list hooks, then `config/batchWrite` to upsert only the reviewed plugin hook
+hashes into `hooks.state`. This is not permission to edit the trust store files
+directly or approve another plugin. Never use
+`--dangerously-bypass-hook-trust`.
+
+If that interface is unavailable, use `setup --open-hooks` on macOS/Linux or
+`setup -OpenHooks` on Windows. The fallback opens a new visible terminal and
+starts the verified Codex CLI; the user enters `/hooks`, reviews, and explicitly
+trusts the commands. If launching fails or the host is headless, guide the user
+to start the selected CLI manually. Do not silently drive the review UI. Fully
+close and relaunch Codex afterward before checking a real event.
+
+The bundled scripts do not update Codex. Only when the user explicitly
+requests a CLI update, establish installation provenance and update the selected
+installation:
+
+- npm: verify `npm list -g --depth=0 @openai/codex` and that the selected CLI is
+  under the canonical `npm prefix -g`; use `npm install -g @openai/codex@latest`
+  (`npm.cmd` on Windows).
+- Homebrew: verify `brew list --cask codex` and that the CLI is under the canonical
+  `brew --caskroom codex`; use `brew upgrade --cask codex`.
+- Desktop-bundled or unknown installations: use that installation's supported
+  update route; do not replace it with npm/Homebrew or another executable.
+
+Verify the same selected path afterward. If it is in use, tell the user to close
+that CLI before updating. Do not change system execution policy.
 
 ## Regular settings
 
-Use the command that matches the user's operating system.
+Use the matching bundled settings script at the resolved plugin root.
 
 macOS:
 
 ```bash
-SKILL_DIR="/absolute/path/containing/this/SKILL.md"
-PLUGIN_ROOT="$(cd "${SKILL_DIR}/../.." && pwd)"
 /bin/sh "${PLUGIN_ROOT}/scripts/voice_notify_config.sh" show
 /bin/sh "${PLUGIN_ROOT}/scripts/voice_notify_config.sh" set --voice female --language ko
 /bin/sh "${PLUGIN_ROOT}/scripts/voice_notify_config.sh" set --voice male --language ru
@@ -142,15 +192,22 @@ PLUGIN_ROOT="$(cd "${SKILL_DIR}/../.." && pwd)"
 Windows:
 
 ```powershell
-$SkillDir = "C:\absolute\path\containing\this\SKILL.md"
-$PluginRoot = [IO.Path]::GetFullPath((Join-Path $SkillDir "..\.."))
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PluginRoot\scripts\voice_notify_config.ps1" show
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PluginRoot\scripts\voice_notify_config.ps1" set -Voice female -Language ko
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PluginRoot\scripts\voice_notify_config.ps1" set -Voice male -Language ru
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PluginRoot\scripts\voice_notify_config.ps1" set -Voice female -Language zh-CN
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PluginRoot\scripts\voice_notify_config.ps1" test -Event Stop
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PluginRoot\scripts\voice_notify_config.ps1" mute
 ```
 
-Report the effective voice and language after a change. The scripts store only
-voice-notification preferences and never read or retain conversation content.
+Linux:
+
+```bash
+python3 "${PLUGIN_ROOT}/scripts/voice_notify_config.py" show
+python3 "${PLUGIN_ROOT}/scripts/voice_notify_config.py" set --voice male --language en
+python3 "${PLUGIN_ROOT}/scripts/voice_notify_config.py" test --event Stop
+python3 "${PLUGIN_ROOT}/scripts/voice_notify_config.py" mute
+```
+
+After a change, report effective voice, language, and enabled state. Preferences
+contain only notification options. Diagnostic output and review receipts stay
+local; redact paths and unrelated metadata before sharing any support report.

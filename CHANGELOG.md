@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.2.0 - 2026-10-03
+
+- Accept current Codex prerelease version strings during compatibility checks.
+- Add read-only `doctor` and exact `review-hooks` / `approve-hooks` setup with
+  a current `approvalDigest`, explicit informed consent, and Codex's supported
+  local app-server approval API. Reject changed commands instead of bypassing
+  review; retain visible manual `/hooks` fallback when the API is unavailable.
+- Simplify first-time setup to one guided request and one reviewed hook approval.
+- Guide setup, five audio-language options, female/male choices, consent, and
+  hearing confirmation in the user's language while preserving saved choices.
+- Declare `extensions.com.openai.onboardingSkill` and a public support URL so
+  supporting hosts can connect the packaged first-time guide. Automatic host
+  invocation remains unverified.
+- Add Linux playback using Python 3's standard library and the first installed
+  `pw-play`, `paplay`, `aplay`, or `ffplay`; do not install audio packages.
+- Keep native macOS and Windows playback/settings and all 100 WAV bytes,
+  notification defaults, and audio licensing unchanged.
+- Maintain English, Korean, Japanese, Simplified Chinese, and Russian README
+  parity; document headless limitations, privacy-safe diagnostics, and the
+  current documented restriction on submitting lifecycle-hook ZIPs.
+- Prepare a separate update candidate; do not claim public submission,
+  approval, or publication from package/test success.
+
 ## 0.1.7 - 2026-08-29
 
 - Clarified direct and indirect selection language for private, offline Codex
