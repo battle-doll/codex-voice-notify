@@ -6,6 +6,7 @@ The digest approval below is synthetic consent for this test's isolated hooks.
 """
 from __future__ import annotations
 
+import errno
 import importlib.util
 import json
 import os
@@ -14,7 +15,9 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
+from unittest import mock
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -33,6 +36,52 @@ SAFE_FIELDS = (
 )
 
 
+def cleanup_temporary_profile(directory: tempfile.TemporaryDirectory) -> None:
+    # A just-exited CLI may still finish writing an owned temporary profile.
+    # Retry only that directory-not-empty race, with 2.25 seconds of total waits.
+    for attempt in range(10):
+        try:
+            directory.cleanup()
+            return
+        except OSError as error:
+            if error.errno != errno.ENOTEMPTY or attempt == 9:
+                raise
+            time.sleep(0.25)
+
+
+class TemporaryProfileCleanupTests(unittest.TestCase):
+    def test_retries_directory_not_empty_until_success(self) -> None:
+        directory = mock.Mock(spec=tempfile.TemporaryDirectory)
+        directory.cleanup.side_effect = [OSError(errno.ENOTEMPTY, "temporary cleanup race"),
+                                         OSError(errno.ENOTEMPTY, "temporary cleanup race"), None]
+        with mock.patch.object(time, "sleep") as pause:
+            cleanup_temporary_profile(directory)
+        self.assertEqual(directory.cleanup.call_count, 3)
+        self.assertEqual(pause.call_args_list, [mock.call(0.25), mock.call(0.25)])
+
+    def test_other_errors_are_not_retried(self) -> None:
+        directory = mock.Mock(spec=tempfile.TemporaryDirectory)
+        error = OSError(errno.EACCES, "temporary cleanup denied")
+        directory.cleanup.side_effect = error
+        with mock.patch.object(time, "sleep") as pause:
+            with self.assertRaises(OSError) as raised:
+                cleanup_temporary_profile(directory)
+        self.assertIs(raised.exception, error)
+        directory.cleanup.assert_called_once_with()
+        pause.assert_not_called()
+
+    def test_directory_not_empty_retry_is_bounded(self) -> None:
+        directory = mock.Mock(spec=tempfile.TemporaryDirectory)
+        error = OSError(errno.ENOTEMPTY, "temporary cleanup race")
+        directory.cleanup.side_effect = error
+        with mock.patch.object(time, "sleep") as pause:
+            with self.assertRaises(OSError) as raised:
+                cleanup_temporary_profile(directory)
+        self.assertIs(raised.exception, error)
+        self.assertEqual(directory.cleanup.call_count, 10)
+        self.assertEqual(pause.call_args_list, [mock.call(0.25)] * 9)
+
+
 @unittest.skipUnless(SELECTED_CODEX, "Set VOICE_NOTIFY_INTEGRATION_CODEX to an installed CLI")
 class RealCodexIntegrationTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -41,7 +90,7 @@ class RealCodexIntegrationTests(unittest.TestCase):
         except (hooks.HookError, OSError, ValueError):
             self.fail("The integration CLI could not be resolved to a native executable.")
         self.directory = tempfile.TemporaryDirectory(prefix="voice-cli-test-")
-        self.addCleanup(self.directory.cleanup)
+        self.addCleanup(cleanup_temporary_profile, self.directory)
         self.base = pathlib.Path(self.directory.name).resolve()
         self.profile = self.base / "codex-profile"
         self.workspace = self.base / "workspace"
