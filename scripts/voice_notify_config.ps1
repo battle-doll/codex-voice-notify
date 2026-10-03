@@ -159,12 +159,20 @@ function Get-CodexPath([string]$ExplicitPath) {
 }
 
 function Get-CodexVersionInfo([string]$CodexPath) {
+    $PreviousErrorActionPreference = $ErrorActionPreference
     try {
+        # Windows PowerShell 5.1 turns native stderr into error records. Only
+        # this read-only probe tolerates warnings; stdout and exit status still
+        # have to match the Codex version contract.
+        $ErrorActionPreference = 'Continue'
         $VersionOutput = (& $CodexPath --version 2>$null | Out-String).Trim()
         $VersionExitCode = $LASTEXITCODE
     }
     catch {
         return $null
+    }
+    finally {
+        $ErrorActionPreference = $PreviousErrorActionPreference
     }
     if ($VersionExitCode -ne 0) {
         return $null

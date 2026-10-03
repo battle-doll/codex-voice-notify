@@ -10,6 +10,7 @@ import importlib.util
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 import tempfile
@@ -181,6 +182,11 @@ class RealCodexIntegrationTests(unittest.TestCase):
                      and retry.get("enabled") is True and retry.get("approvalDigest") == digest
                      and retry.get("lifecyclePlaybackVerified") is False, "same-digest retry", retry)
         self.require(not (self.profile / "auth.json").exists(), "unauthenticated profile", {})
+        version = after.get("codexVersion")
+        self.require(isinstance(version, str) and re.fullmatch(
+            r"[0-9]+\.[0-9]+\.[0-9]+(?:[-+][A-Za-z0-9.+-]+)?", version
+        ) is not None, "verified CLI version", {})
+        print("Real Codex integration passed: CLI " + version + "; isolated hooks 10/10, audio unverified.")
 
 
 if __name__ == "__main__":
